@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ERP Workspace | LedgerFlow</title>
+  <script>
+    (function () {
+      var key = "ledgerflow-theme";
+      var stored = localStorage.getItem(key);
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", stored || (prefersDark ? "dark" : "light"));
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="site-header__left">
+        <button id="sidebar-toggle" class="hamburger-button" type="button" aria-label="Toggle module sidebar" aria-expanded="true">
+          <span class="hamburger-button__lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </button>
+        <a class="brand" href="../index.html">
+          <span class="brand__mark">L</span>
+          <span>LedgerFlow ERP</span>
+        </a>
+      </div>
+      <div class="site-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
+      </div>
+    </header>
+
+    <main class="workspace-shell">
+      <aside id="feature-rail" class="feature-rail panel">
+        <div class="feature-rail__header">
+          <div>
+            <div class="eyebrow">Modules</div>
+            <h2>Features</h2>
+          </div>
+        </div>
+        <div class="feature-list">
+          <button class="feature-button is-active" type="button" data-module="dashboard">
+            <span class="feature-button__icon" aria-hidden="true">DB</span>
+            <span class="feature-button__label">Dashboard</span>
+            <small>Overview and activity</small>
+          </button>
+          <button class="feature-button" type="button" data-module="invoices">
+            <span class="feature-button__icon" aria-hidden="true">IN</span>
+            <span class="feature-button__label">Invoices</span>
+            <small>Create and print bills</small>
+          </button>
+          <button class="feature-button" type="button" data-module="customers">
+            <span class="feature-button__icon" aria-hidden="true">CU</span>
+            <span class="feature-button__label">Customers</span>
+            <small>Manage buyer records</small>
+          </button>
+          <button class="feature-button" type="button" data-module="products">
+            <span class="feature-button__icon" aria-hidden="true">PR</span>
+            <span class="feature-button__label">Products</span>
+            <small>Items, price, GST</small>
+          </button>
+          <button class="feature-button" type="button" data-module="admin">
+            <span class="feature-button__icon" aria-hidden="true">AD</span>
+            <span class="feature-button__label">Admin</span>
+            <small>Company and settings</small>
+          </button>
+        </div>
+      </aside>
+
+      <section class="workspace-main">
+        <section class="workspace-banner panel">
+          <div>
+            <div class="eyebrow">Business Control Center</div>
+            <h1 id="active-module-title">Dashboard</h1>
+            <p id="active-module-description" class="panel__lead">See the overall business picture, then jump into billing, customers, products, and admin setup.</p>
+          </div>
+        </section>
+
+        <section class="workspace-toolbar panel">
+          <div class="toolbar-copy">
+            <span class="eyebrow">Module Menu</span>
+            <h2 id="module-menu-title">Dashboard Actions</h2>
+          </div>
+          <div id="module-menu" class="module-menu"></div>
+        </section>
+
+        <section class="workspace-content">
+          <section class="module-screen is-active" data-module="dashboard">
+            <div class="content-grid content-grid--two">
+              <article id="dashboard-overview" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Overview</div>
+                    <h2>Business snapshot</h2>
+                  </div>
+                </div>
+                <div class="dashboard-summary-grid">
+                  <div class="summary-card">
+                    <span>Billing status</span>
+                    <strong id="dashboard-billing-status">Ready</strong>
+                    <p>Use invoices to generate GST-ready customer bills.</p>
+                  </div>
+                  <div class="summary-card">
+                    <span>Company state</span>
+                    <strong id="dashboard-company-state">-</strong>
+                    <p>Used to split tax into CGST, SGST, or IGST.</p>
+                  </div>
+                  <div class="summary-card">
+                    <span>Latest invoice</span>
+                    <strong id="dashboard-latest-invoice">None yet</strong>
+                    <p>Recent activity will appear here as you save invoices.</p>
+                  </div>
+                </div>
+              </article>
+
+              <article id="dashboard-activity" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Recent Activity</div>
+                    <h2>Latest invoices</h2>
+                  </div>
+                </div>
+                <div id="dashboard-invoice-list" class="data-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="module-screen" data-module="invoices">
+            <div class="content-grid content-grid--invoice">
+              <article id="invoice-create" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Invoice Builder</div>
+                    <h2>Create tax invoice</h2>
+                  </div>
+                </div>
+                <form id="invoice-form" class="app-form">
+                  <label>
+                    <span>Invoice number</span>
+                    <input id="invoice-number" name="invoiceNumber" type="text" required>
+                  </label>
+                  <label>
+                    <span>Invoice date</span>
+                    <input id="invoice-date" name="invoiceDate" type="date" required>
+                  </label>
+                  <label class="field-span">
+                    <span>Customer</span>
+                    <select id="invoice-customer" name="invoiceCustomer" required></select>
+                  </label>
+                  <div class="line-items">
+                    <div class="line-items__head">
+                      <h3>Line items</h3>
+                      <button id="add-line-item" class="button button--secondary" type="button">Add row</button>
+                    </div>
+                    <div id="line-items" class="line-item-list"></div>
+                  </div>
+                  <label class="field-span">
+                    <span>Notes</span>
+                    <textarea id="invoice-notes" name="invoiceNotes" rows="3" placeholder="Payment due in 15 days, bank details, thank you note, etc."></textarea>
+                  </label>
+                  <div id="invoice-tax-summary" class="invoice-totals">
+                    <div><span>Subtotal</span><strong id="subtotal-value">Rs 0.00</strong></div>
+                    <div><span>CGST</span><strong id="cgst-value">Rs 0.00</strong></div>
+                    <div><span>SGST</span><strong id="sgst-value">Rs 0.00</strong></div>
+                    <div><span>IGST</span><strong id="igst-value">Rs 0.00</strong></div>
+                    <div class="invoice-totals__grand"><span>Grand total</span><strong id="grand-total-value">Rs 0.00</strong></div>
+                  </div>
+                  <div class="button-row">
+                    <button class="button button--primary" type="submit">Save invoice</button>
+                    <button id="print-invoice" class="button button--secondary" type="button">Print preview</button>
+                  </div>
+                </form>
+              </article>
+
+              <aside id="invoice-preview-panel" class="panel preview-panel">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Live Preview</div>
+                    <h2>Invoice output</h2>
+                  </div>
+                </div>
+                <div id="invoice-preview" class="invoice-preview"></div>
+              </aside>
+            </div>
+
+            <article id="invoice-history-panel" class="panel module-card module-card--spaced">
+              <div class="panel-head">
+                <div>
+                  <div class="eyebrow">Saved Invoices</div>
+                  <h2>Invoice history</h2>
+                </div>
+              </div>
+              <div id="invoice-history" class="history-table"></div>
+            </article>
+          </section>
+
+          <section class="module-screen" data-module="customers">
+            <div class="content-grid content-grid--two">
+              <article id="customer-add" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div id="customer-form-eyebrow" class="eyebrow">Customer Master</div>
+                    <h2 id="customer-form-title">Add customer</h2>
+                  </div>
+                </div>
+                <form id="customer-form" class="app-form">
+                  <input id="customer-id" name="customerId" type="hidden">
+                  <label>
+                    <span>Customer name</span>
+                    <input id="customer-name" name="customerName" type="text" required>
+                  </label>
+                  <label>
+                    <span>Mobile</span>
+                    <input id="customer-mobile" name="customerMobile" type="tel" maxlength="10" required>
+                  </label>
+                  <label>
+                    <span>Customer type</span>
+                    <select id="customer-type" name="customerType">
+                      <option value="Individual">Individual</option>
+                      <option value="Business">Business</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Company name</span>
+                    <input id="customer-company-name" name="customerCompanyName" type="text">
+                  </label>
+                  <label>
+                    <span>State</span>
+                    <select id="customer-state" name="customerState"></select>
+                  </label>
+                  <label>
+                    <span>GST number</span>
+                    <input id="customer-gst-number" name="customerGstNumber" type="text" maxlength="15">
+                  </label>
+                  <label>
+                    <span>Email</span>
+                    <input id="customer-email" name="customerEmail" type="email">
+                  </label>
+                  <label>
+                    <span>Opening balance</span>
+                    <input id="customer-opening-balance" name="customerOpeningBalance" type="number" min="0" step="0.01" value="0">
+                  </label>
+                  <label>
+                    <span>Credit limit</span>
+                    <input id="customer-credit-limit" name="customerCreditLimit" type="number" min="0" step="0.01">
+                  </label>
+                  <label>
+                    <span>City</span>
+                    <input id="customer-city" name="customerCity" type="text">
+                  </label>
+                  <label>
+                    <span>Pincode</span>
+                    <input id="customer-pincode" name="customerPincode" type="text" maxlength="6">
+                  </label>
+                  <label class="field-span">
+                    <span>Address</span>
+                    <textarea id="customer-address" name="customerAddress" rows="3"></textarea>
+                  </label>
+                  <p id="customer-form-message" class="form-message field-span" aria-live="polite"></p>
+                  <div class="button-row">
+                    <button id="customer-submit-button" class="button button--primary" type="submit">Add customer</button>
+                    <button id="customer-cancel-button" class="button button--secondary" type="button">Cancel edit</button>
+                  </div>
+                </form>
+              </article>
+
+              <article id="customer-list-panel" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Customer Records</div>
+                    <h2>Customer list</h2>
+                  </div>
+                  <button id="customer-refresh-button" class="button button--secondary" type="button">Refresh</button>
+                </div>
+                <div id="customer-list" class="data-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="module-screen" data-module="products">
+            <div class="content-grid content-grid--two">
+              <article id="product-add" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Product Master</div>
+                    <h2>Add item</h2>
+                  </div>
+                </div>
+                <form id="product-form" class="app-form">
+                  <label>
+                    <span>Item name</span>
+                    <input id="product-name" name="productName" type="text" required>
+                  </label>
+                  <label>
+                    <span>HSN or SAC</span>
+                    <input id="product-hsn" name="productHsn" type="text">
+                  </label>
+                  <label>
+                    <span>Price</span>
+                    <input id="product-price" name="productPrice" type="number" min="0" step="0.01" required>
+                  </label>
+                  <label>
+                    <span>GST %</span>
+                    <input id="product-gst" name="productGst" type="number" min="0" step="0.01" required>
+                  </label>
+                  <button class="button button--primary" type="submit">Add product</button>
+                </form>
+              </article>
+
+              <article id="product-list-panel" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Product Records</div>
+                    <h2>Product list</h2>
+                  </div>
+                </div>
+                <div id="product-list" class="data-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="module-screen" data-module="admin">
+            <div class="content-grid content-grid--two">
+              <article id="admin-company" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Admin</div>
+                    <h2>Business details</h2>
+                  </div>
+                </div>
+                <form id="company-form" class="app-form">
+                  <label>
+                    <span>Company name</span>
+                    <input id="company-name" name="companyName" type="text" required>
+                  </label>
+                  <label>
+                    <span>GSTIN</span>
+                    <input id="company-gstin" name="companyGstin" type="text" maxlength="15">
+                  </label>
+                  <label>
+                    <span>State</span>
+                    <select id="company-state" name="companyState"></select>
+                  </label>
+                  <label class="field-span">
+                    <span>Address</span>
+                    <textarea id="company-address" name="companyAddress" rows="3"></textarea>
+                  </label>
+                  <button class="button button--primary" type="submit">Save company</button>
+                </form>
+              </article>
+
+              <article id="admin-controls" class="panel module-card">
+                <div class="panel-head">
+                  <div>
+                    <div class="eyebrow">Admin Summary</div>
+                    <h2>Current configuration</h2>
+                  </div>
+                </div>
+                <div class="dashboard-summary-grid">
+                  <div class="summary-card">
+                    <span>Company</span>
+                    <strong id="admin-company-name">-</strong>
+                    <p>Legal business name used on invoices.</p>
+                  </div>
+                  <div class="summary-card">
+                    <span>GSTIN</span>
+                    <strong id="admin-company-gstin">-</strong>
+                    <p>Used for customer-facing tax invoices.</p>
+                  </div>
+                  <div class="summary-card">
+                    <span>Place of business</span>
+                    <strong id="admin-company-state">-</strong>
+                    <p>Controls GST split for local and interstate sales.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="theme.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/customer-api.js"></script>
+  <script src="js/state-store.js"></script>
+  <script src="js/dom-elements.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/invoice.js"></script>
+  <script src="js/renderers.js"></script>
+  <script src="erp.js"></script>
+</body>
+</html>
+

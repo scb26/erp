@@ -1,4 +1,4 @@
-# LedgerFlow ERP Database Structure
+# Unidex ERP Database Structure
 
 This schema matches the current ERP modules and gives us a clean backend path.
 

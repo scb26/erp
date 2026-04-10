@@ -2,6 +2,10 @@
 
 Production-ready customer management backend built with Node.js, Express, and MySQL.
 
+Full API guide:
+
+- [API-DOCUMENTATION.md](/D:/New folder/erp/backend/API-DOCUMENTATION.md)
+
 ## Install
 
 ```bash
@@ -21,6 +25,12 @@ npm install -D nodemon
 2. Update your MySQL credentials
 3. Create the `customers` table using [sql/customers.sql](/D:/New folder/erp/backend/sql/customers.sql)
 4. Start the server
+
+Quick PowerShell setup for local MySQL Server:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-unidex-backend.ps1
+```
 
 Development:
 

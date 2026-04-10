@@ -1,4 +1,4 @@
--- LedgerFlow ERP
+-- Unidex ERP
 -- MySQL 8.0+ schema for the current invoice, GST, customer, product, and admin features.
 
 SET NAMES utf8mb4;

@@ -6,12 +6,23 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   // Storage concerns are isolated here so the rest of the app can work with plain objects.
   function hydrate() {
-    var company = utils.readJSON(config.STORAGE_KEYS.company) || {
+    var companyDefaults = {
       name: "Acme Trading Co.",
       gstin: "27ABCDE1234F1Z5",
+      pan: "ABCDE1234F",
+      phone: "9876543210",
       state: "Maharashtra",
-      address: "201 Market Arcade, Pune, Maharashtra"
+      pincode: "411001",
+      address: "201 Market Arcade, Pune, Maharashtra",
+      businessType: "Private Limited Company",
+      businessCategory: "Trading",
+      email: "accounts@acmetrading.example",
+      financialYearStart: "2026-04-01",
+      invoicePrefix: "INV-2026-",
+      logoDataUrl: "",
+      signatureDataUrl: ""
     };
+    var company = Object.assign({}, companyDefaults, utils.readJSON(config.STORAGE_KEYS.company) || {});
 
     var customers = utils.readJSON(config.STORAGE_KEYS.customers) || [
       {

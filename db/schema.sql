@@ -1,4 +1,4 @@
--- LedgerFlow ERP
+-- Unidex ERP
 -- Core relational schema for the current invoice, GST, customer, product, and admin features.
 -- Written in portable SQL leaning toward PostgreSQL/MySQL-style types and constraints.
 

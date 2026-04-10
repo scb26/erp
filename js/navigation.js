@@ -11,15 +11,21 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function applySidebarState(app) {
+    var isCollapsed;
+
     if (!app.elements.featureRail) {
       return;
     }
 
-    app.elements.featureRail.classList.toggle("is-collapsed", app.isSidebarCollapsed);
-    document.body.classList.toggle("sidebar-collapsed", app.isSidebarCollapsed);
+    isCollapsed = !!app.isSidebarCollapsed;
+
+    app.elements.featureRail.classList.toggle("is-collapsed", isCollapsed);
+    document.body.classList.toggle("sidebar-collapsed", isCollapsed);
 
     if (app.elements.sidebarToggle) {
-      app.elements.sidebarToggle.setAttribute("aria-expanded", app.isSidebarCollapsed ? "false" : "true");
+      app.elements.sidebarToggle.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+      app.elements.sidebarToggle.setAttribute("aria-label", isCollapsed ? "Expand feature panel" : "Collapse feature panel");
+      app.elements.sidebarToggle.innerHTML = '<span id="sidebar-toggle-icon" aria-hidden="true">' + (isCollapsed ? "&rarr;" : "&larr;") + "</span>";
     }
   }
 
@@ -34,9 +40,18 @@ window.LedgerFlow = window.LedgerFlow || {};
       screen.classList.toggle("is-active", screen.dataset.module === app.activeModule);
     });
 
-    app.elements.activeModuleTitle.textContent = config.MODULES[app.activeModule].title;
-    app.elements.activeModuleDescription.textContent = config.MODULES[app.activeModule].description;
-    app.elements.moduleMenuTitle.textContent = config.MODULES[app.activeModule].menuTitle;
+    if (app.elements.activeModuleTitle) {
+      app.elements.activeModuleTitle.textContent = config.MODULES[app.activeModule].title;
+    }
+
+    if (app.elements.activeModuleDescription) {
+      app.elements.activeModuleDescription.textContent = config.MODULES[app.activeModule].description;
+    }
+
+    if (app.elements.moduleMenuTitle) {
+      app.elements.moduleMenuTitle.textContent = config.MODULES[app.activeModule].menuTitle;
+    }
+
     renderModuleMenu(app);
   }
 

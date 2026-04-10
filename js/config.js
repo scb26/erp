@@ -44,14 +44,12 @@ window.LedgerFlow = window.LedgerFlow || {};
         ]
       },
       invoices: {
-        title: "Invoices",
-        description: "Create GST-ready invoices, review tax totals, preview the bill, and reopen saved invoices.",
-        menuTitle: "Invoice Menu",
+        title: "Billing",
+        description: "Run quick bills and full GST invoices from one billing workspace.",
+        menuTitle: "Billing Menu",
         menu: [
-          { label: "Create Invoice", target: "invoice-create" },
-          { label: "Tax Summary", target: "invoice-tax-summary" },
-          { label: "Preview", target: "invoice-preview-panel" },
-          { label: "History", target: "invoice-history-panel" }
+          { label: "Quick Bill", target: "billing-quick-bill-view", view: "quick-bill" },
+          { label: "Invoice", target: "billing-invoice-view", view: "invoice" }
         ]
       },
       customers: {

@@ -5,7 +5,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   ns.modules = ns.modules || {};
 
-  // Dashboard owns the high-level business summary and recent invoice activity.
+  // Dashboard owns the high-level business summary and recent billing activity.
   function render(app) {
     var latestInvoice = app.data.invoices[0] || null;
 
@@ -14,7 +14,7 @@ window.LedgerFlow = window.LedgerFlow || {};
     app.elements.dashboardLatestInvoice.textContent = latestInvoice ? latestInvoice.invoiceNumber : "None yet";
 
     if (!app.data.invoices.length) {
-      app.elements.dashboardInvoiceList.innerHTML = '<div class="empty-state">Create your first invoice to see recent activity here.</div>';
+      app.elements.dashboardInvoiceList.innerHTML = '<div class="empty-state">Create your first bill to see recent billing activity here.</div>';
       return;
     }
 

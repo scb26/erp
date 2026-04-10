@@ -43,9 +43,9 @@
             <small>Overview and activity</small>
           </button>
           <button class="feature-button" type="button" data-module="invoices">
-            <span class="feature-button__icon" aria-hidden="true">IN</span>
-            <span class="feature-button__label">Invoices</span>
-            <small>Create and print bills</small>
+            <span class="feature-button__icon" aria-hidden="true">BL</span>
+            <span class="feature-button__label">Billing</span>
+            <small>Quick bills and GST invoices</small>
           </button>
           <button class="feature-button" type="button" data-module="customers">
             <span class="feature-button__icon" aria-hidden="true">CU</span>
@@ -87,7 +87,7 @@
                   <div class="summary-card">
                     <span>Billing status</span>
                     <strong id="dashboard-billing-status">Ready</strong>
-                    <p>Use invoices to generate GST-ready customer bills.</p>
+                    <p>Use billing to generate quick bills and GST-ready customer invoices.</p>
                   </div>
                   <div class="summary-card">
                     <span>Company state</span>
@@ -95,9 +95,9 @@
                     <p>Used to split tax into CGST, SGST, or IGST.</p>
                   </div>
                   <div class="summary-card">
-                    <span>Latest invoice</span>
+                    <span>Latest bill</span>
                     <strong id="dashboard-latest-invoice">None yet</strong>
-                    <p>Recent activity will appear here as you save invoices.</p>
+                    <p>Recent activity will appear here as you save bills and invoices.</p>
                   </div>
                 </div>
               </article>
@@ -106,7 +106,7 @@
                 <div class="panel-head">
                   <div>
                     <div class="eyebrow">Recent Activity</div>
-                    <h2>Latest invoices</h2>
+                    <h2>Latest bills</h2>
                   </div>
                 </div>
                 <div id="dashboard-invoice-list" class="data-list"></div>
@@ -115,77 +115,108 @@
           </section>
 
           <section class="module-screen" data-module="invoices">
-            <div class="content-grid content-grid--invoice">
-              <article id="invoice-create" class="panel module-card">
+            <section id="billing-quick-bill-view" class="billing-view is-active" data-billing-view="quick-bill">
+              <article id="billing-quick-bill" class="panel module-card module-card--spaced">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Invoice Builder</div>
-                    <h2>Create tax invoice</h2>
+                    <div class="eyebrow">Quick Bill</div>
+                    <h2>Counter billing</h2>
                   </div>
                 </div>
-                <form id="invoice-form" class="app-form">
-                  <label>
-                    <span>Invoice number</span>
-                    <input id="invoice-number" name="invoiceNumber" type="text" required>
-                  </label>
-                  <label>
-                    <span>Invoice date</span>
-                    <input id="invoice-date" name="invoiceDate" type="date" required>
-                  </label>
-                  <label class="field-span">
-                    <span>Customer</span>
-                    <div class="customer-search">
-                      <input id="invoice-customer-name" name="invoiceCustomerName" type="text" placeholder="Type customer name" autocomplete="off" required>
-                      <input id="invoice-customer" name="invoiceCustomer" type="hidden">
-                      <div id="invoice-customer-suggestions" class="customer-suggestions" hidden></div>
-                    </div>
-                  </label>
-                  <div class="line-items">
-                    <div class="line-items__head">
-                      <h3>Line items</h3>
-                      <button id="add-line-item" class="button button--secondary" type="button">Add row</button>
-                    </div>
-                    <div id="line-items" class="line-item-list"></div>
+                <p class="panel__lead">Use this billing area for fast counter sales today. Quick Bill stays lightweight, while the invoice section handles full GST invoice output when you need it.</p>
+                <div class="dashboard-summary-grid">
+                  <div class="summary-card">
+                    <span>Walk-in friendly</span>
+                    <strong>Fast name entry</strong>
+                    <p>Type a new customer name directly or choose a saved customer from suggestions.</p>
                   </div>
-                  <label class="field-span">
-                    <span>Notes</span>
-                    <textarea id="invoice-notes" name="invoiceNotes" rows="3" placeholder="Payment due in 15 days, bank details, thank you note, etc."></textarea>
-                  </label>
-                  <div id="invoice-tax-summary" class="invoice-totals">
-                    <div><span>Subtotal</span><strong id="subtotal-value">Rs 0.00</strong></div>
-                    <div><span>CGST</span><strong id="cgst-value">Rs 0.00</strong></div>
-                    <div><span>SGST</span><strong id="sgst-value">Rs 0.00</strong></div>
-                    <div><span>IGST</span><strong id="igst-value">Rs 0.00</strong></div>
-                    <div class="invoice-totals__grand"><span>Grand total</span><strong id="grand-total-value">Rs 0.00</strong></div>
+                  <div class="summary-card">
+                    <span>Ready for expansion</span>
+                    <strong>Barcode-ready path</strong>
+                    <p>This section is set up so barcode scanning can be added next without changing the full billing module.</p>
                   </div>
-                  <p id="invoice-form-message" class="form-message field-span" aria-live="polite"></p>
-                  <div class="button-row">
-                    <button class="button button--primary" type="submit">Save invoice</button>
-                    <button id="print-invoice" class="button button--secondary" type="button">Print preview</button>
+                  <div class="summary-card">
+                    <span>Shared totals</span>
+                    <strong>One billing engine</strong>
+                    <p>Quick Bill and Invoice will continue sharing products, tax calculations, preview, and print flow.</p>
                   </div>
-                </form>
+                </div>
               </article>
+            </section>
 
-              <aside id="invoice-preview-panel" class="panel preview-panel">
+            <section id="billing-invoice-view" class="billing-view" data-billing-view="invoice">
+              <div class="content-grid content-grid--invoice">
+                <article id="invoice-create" class="panel module-card">
+                  <div class="panel-head">
+                    <div>
+                      <div class="eyebrow">Invoice</div>
+                      <h2>GST invoice</h2>
+                    </div>
+                  </div>
+                  <form id="invoice-form" class="app-form">
+                    <label>
+                      <span>Invoice number</span>
+                      <input id="invoice-number" name="invoiceNumber" type="text" required>
+                    </label>
+                    <label>
+                      <span>Invoice date</span>
+                      <input id="invoice-date" name="invoiceDate" type="date" required>
+                    </label>
+                    <label class="field-span">
+                      <span>Customer</span>
+                      <div class="customer-search">
+                        <input id="invoice-customer-name" name="invoiceCustomerName" type="text" placeholder="Type customer name" autocomplete="off" required>
+                        <input id="invoice-customer" name="invoiceCustomer" type="hidden">
+                        <div id="invoice-customer-suggestions" class="customer-suggestions" hidden></div>
+                      </div>
+                    </label>
+                    <div class="line-items">
+                      <div class="line-items__head">
+                        <h3>Line items</h3>
+                        <button id="add-line-item" class="button button--secondary" type="button">Add row</button>
+                      </div>
+                      <div id="line-items" class="line-item-list"></div>
+                    </div>
+                    <label class="field-span">
+                      <span>Notes</span>
+                      <textarea id="invoice-notes" name="invoiceNotes" rows="3" placeholder="Payment due in 15 days, bank details, thank you note, etc."></textarea>
+                    </label>
+                    <div id="invoice-tax-summary" class="invoice-totals">
+                      <div><span>Subtotal</span><strong id="subtotal-value">Rs 0.00</strong></div>
+                      <div><span>CGST</span><strong id="cgst-value">Rs 0.00</strong></div>
+                      <div><span>SGST</span><strong id="sgst-value">Rs 0.00</strong></div>
+                      <div><span>IGST</span><strong id="igst-value">Rs 0.00</strong></div>
+                      <div class="invoice-totals__grand"><span>Grand total</span><strong id="grand-total-value">Rs 0.00</strong></div>
+                    </div>
+                    <p id="invoice-form-message" class="form-message field-span" aria-live="polite"></p>
+                    <div class="button-row">
+                      <button class="button button--primary" type="submit">Save invoice</button>
+                      <button id="print-invoice" class="button button--secondary" type="button">Print preview</button>
+                    </div>
+                  </form>
+                </article>
+
+                <aside id="invoice-preview-panel" class="panel preview-panel">
+                  <div class="panel-head">
+                    <div>
+                      <div class="eyebrow">Live Preview</div>
+                      <h2>Invoice output</h2>
+                    </div>
+                  </div>
+                  <div id="invoice-preview" class="invoice-preview"></div>
+                </aside>
+              </div>
+
+              <article id="invoice-history-panel" class="panel module-card module-card--spaced">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Live Preview</div>
-                    <h2>Invoice output</h2>
+                    <div class="eyebrow">Saved Bills</div>
+                    <h2>Billing history</h2>
                   </div>
                 </div>
-                <div id="invoice-preview" class="invoice-preview"></div>
-              </aside>
-            </div>
-
-            <article id="invoice-history-panel" class="panel module-card module-card--spaced">
-              <div class="panel-head">
-                <div>
-                  <div class="eyebrow">Saved Invoices</div>
-                  <h2>Invoice history</h2>
-                </div>
-              </div>
-              <div id="invoice-history" class="history-table"></div>
-            </article>
+                <div id="invoice-history" class="history-table"></div>
+              </article>
+            </section>
           </section>
 
           <section class="module-screen" data-module="customers">

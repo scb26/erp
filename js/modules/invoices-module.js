@@ -7,6 +7,10 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   // Invoice module owns line items, GST calculations, preview rendering, and history.
   function init(app) {
+    if (!app.activeBillingView) {
+      app.activeBillingView = "quick-bill";
+    }
+
     app.elements.invoiceCustomerNameInput.addEventListener("input", function () {
       handleCustomerNameInput(app);
     });
@@ -84,6 +88,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       app.previewInvoice = draft;
       app.persist();
       resetForm(app, { keepPreview: true });
+      setActiveBillingView(app, "invoice");
       app.renderAll();
       setMessage(app, "Invoice " + draft.invoiceNumber + " saved successfully. You can review it in the preview and history below.", "success");
       app.setActiveModule("invoices");
@@ -99,6 +104,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       }) || null;
 
       renderPreview(app, app.previewInvoice);
+      setActiveBillingView(app, "invoice");
       app.setActiveModule("invoices");
       document.getElementById("invoice-preview-panel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -113,6 +119,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function render(app) {
+    applyBillingView(app);
     renderHistory(app);
     ensureDefaults(app);
     syncLineItemProductOptions(app);
@@ -558,6 +565,25 @@ window.LedgerFlow = window.LedgerFlow || {};
     return "INV-" + String(1001 + app.data.invoices.length);
   }
 
+  function setActiveBillingView(app, viewKey) {
+    app.activeBillingView = viewKey === "invoice" ? "invoice" : "quick-bill";
+    applyBillingView(app);
+    if (ns.navigation && typeof ns.navigation.renderModuleMenu === "function") {
+      ns.navigation.renderModuleMenu(app);
+    }
+    app.renderAll();
+  }
+
+  function applyBillingView(app) {
+    if (!app.elements.billingViews || !app.elements.billingViews.length) {
+      return;
+    }
+
+    app.elements.billingViews.forEach(function (view) {
+      view.classList.toggle("is-active", view.dataset.billingView === app.activeBillingView);
+    });
+  }
+
   function emptyTotals() {
     return { subtotal: 0, cgst: 0, sgst: 0, igst: 0, grandTotal: 0 };
   }
@@ -577,6 +603,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   ns.modules.invoices = {
     init: init,
-    render: render
+    render: render,
+    setActiveBillingView: setActiveBillingView
   };
 })(window.LedgerFlow);

@@ -63,6 +63,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       activeModuleDescription: document.getElementById("active-module-description"),
       featureButtons: Array.prototype.slice.call(document.querySelectorAll(".feature-button")),
       moduleScreens: Array.prototype.slice.call(document.querySelectorAll(".module-screen")),
+      billingViews: Array.prototype.slice.call(document.querySelectorAll(".billing-view")),
       dashboardInvoiceList: document.getElementById("dashboard-invoice-list"),
       dashboardBillingStatus: document.getElementById("dashboard-billing-status"),
       dashboardCompanyState: document.getElementById("dashboard-company-state"),

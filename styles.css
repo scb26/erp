@@ -395,6 +395,11 @@ body.sidebar-collapsed .workspace-shell {
   white-space: nowrap;
 }
 
+.module-menu__button.is-active {
+  background: linear-gradient(135deg, rgba(57, 169, 255, 0.18), rgba(124, 216, 255, 0.28));
+  border-color: rgba(57, 169, 255, 0.42);
+}
+
 .workspace-content {
   min-width: 0;
 }
@@ -405,6 +410,15 @@ body.sidebar-collapsed .workspace-shell {
 
 .module-screen.is-active {
   display: block;
+}
+
+.billing-view {
+  display: none;
+  gap: 18px;
+}
+
+.billing-view.is-active {
+  display: grid;
 }
 
 .content-grid--two {

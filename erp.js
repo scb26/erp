@@ -22,6 +22,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       data: stateStore.hydrate(),
       previewInvoice: null,
       activeModule: "dashboard",
+      activeBillingView: "quick-bill",
       isSidebarCollapsed: window.localStorage.getItem(config.STORAGE_KEYS.sidebar) === "true"
     };
 
@@ -35,6 +36,12 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     app.setActiveModule = function (moduleKey) {
       navigation.setActiveModule(app, moduleKey);
+    };
+
+    app.setActiveBillingView = function (viewKey) {
+      if (ns.modules.invoices && typeof ns.modules.invoices.setActiveBillingView === "function") {
+        ns.modules.invoices.setActiveBillingView(app, viewKey);
+      }
     };
 
     populateStateOptions(app.elements.companyStateSelect);
@@ -74,6 +81,11 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     app.elements.moduleMenu.addEventListener("click", function (event) {
       var target;
+
+      if (event.target.dataset.billingView && typeof app.setActiveBillingView === "function") {
+        app.setActiveBillingView(event.target.dataset.billingView);
+        return;
+      }
 
       if (!event.target.dataset.targetId) {
         return;

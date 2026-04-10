@@ -57,7 +57,11 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   function renderModuleMenu(app) {
     app.elements.moduleMenu.innerHTML = config.MODULES[app.activeModule].menu.map(function (item) {
-      return '<button class="module-menu__button" type="button" data-target-id="' + item.target + '">' + item.label + '</button>';
+      var isActiveBillingView = app.activeModule === "invoices" && item.view && item.view === app.activeBillingView;
+      var activeClass = isActiveBillingView ? " is-active" : "";
+      var billingViewAttribute = item.view ? ' data-billing-view="' + item.view + '"' : "";
+
+      return '<button class="module-menu__button' + activeClass + '" type="button" data-target-id="' + item.target + '"' + billingViewAttribute + ">" + item.label + "</button>";
     }).join("");
   }
 

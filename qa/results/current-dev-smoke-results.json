@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-04-10T13:53:34.923Z",
+  "appUrl": "http://127.0.0.1:8080/",
+  "apiUrl": "http://127.0.0.1:4000",
+  "results": [
+    {
+      "id": "SMK-001",
+      "module": "Bootstrap",
+      "scenario": "App loads with core modules visible",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:37.079Z",
+      "finishedAt": "2026-04-10T13:53:37.224Z",
+      "detail": "Loaded app successfully with 5 modules."
+    },
+    {
+      "id": "ADM-001",
+      "module": "Admin",
+      "scenario": "Invalid GSTIN shows validation message",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:37.224Z",
+      "finishedAt": "2026-04-10T13:53:38.242Z",
+      "detail": "GSTIN must be exactly 15 characters in valid format."
+    },
+    {
+      "id": "ADM-002",
+      "module": "Admin",
+      "scenario": "Valid company profile saves and updates summary",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:38.242Z",
+      "finishedAt": "2026-04-10T13:53:40.703Z",
+      "detail": "Saved company profile and updated summary successfully."
+    },
+    {
+      "id": "PRO-001",
+      "module": "Products",
+      "scenario": "New product appears in billing line items",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:40.703Z",
+      "finishedAt": "2026-04-10T13:53:42.238Z",
+      "detail": "Product created and visible in invoice dropdown."
+    },
+    {
+      "id": "INV-001",
+      "module": "Invoices",
+      "scenario": "Existing customer suggestion can be selected and billed",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:42.238Z",
+      "finishedAt": "2026-04-10T13:53:44.654Z",
+      "detail": "Existing customer suggestion selected and invoice saved."
+    },
+    {
+      "id": "BROWSER-ERROR",
+      "module": "Runtime",
+      "scenario": "Unhandled browser error",
+      "status": "FAIL",
+      "startedAt": "2026-04-10T13:53:45.974Z",
+      "finishedAt": "2026-04-10T13:53:45.974Z",
+      "detail": "QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'ledgerflow-invoices' exceeded the quota.\n    at Object.persist (http://127.0.0.1:8080/js/state-store.js:58:25)\n    at app.persist (http://127.0.0.1:8080/erp.js:29:18)\n    at HTMLFormElement.<anonymous> (http://127.0.0.1:8080/js/modules/invoices-module.js:85:11)"
+    },
+    {
+      "id": "INV-002",
+      "module": "Invoices",
+      "scenario": "New typed customer name saves as ad hoc invoice customer",
+      "status": "FAIL",
+      "startedAt": "2026-04-10T13:53:44.654Z",
+      "finishedAt": "2026-04-10T13:53:46.540Z",
+      "detail": "Latest saved invoice does not contain the ad hoc customer name."
+    },
+    {
+      "id": "UI-001",
+      "module": "UI",
+      "scenario": "Theme choice persists after reload",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:46.540Z",
+      "finishedAt": "2026-04-10T13:53:47.383Z",
+      "detail": "Theme persisted as light."
+    },
+    {
+      "id": "UI-002",
+      "module": "UI",
+      "scenario": "Sidebar collapse state persists after reload",
+      "status": "PASS",
+      "startedAt": "2026-04-10T13:53:47.383Z",
+      "finishedAt": "2026-04-10T13:53:48.769Z",
+      "detail": "Collapsed sidebar state persisted correctly."
+    }
+  ]
+}

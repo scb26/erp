@@ -21,7 +21,8 @@
 
   function sync() {
     var dark = currentTheme() === "dark";
-    toggle.textContent = dark ? "Light" : "Dark";
+    toggle.innerHTML = '<span class="openclaw-theme-toggle-icon">' + (dark ? '☀' : '☾') + '</span>';
     toggle.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+    toggle.setAttribute("title", dark ? "Switch to light mode" : "Switch to dark mode");
   }
 })();

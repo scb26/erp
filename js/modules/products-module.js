@@ -12,6 +12,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
       app.data.products.unshift({
         id: utils.createId("ITEM"),
+        barcode: valueOf("product-barcode"),
         name: valueOf("product-name"),
         hsn: valueOf("product-hsn"),
         price: numberOf("product-price"),
@@ -34,6 +35,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       return [
         '<article class="data-card">',
         "<h3>" + utils.escapeHtml(product.name) + "</h3>",
+        "<p>Barcode: " + utils.escapeHtml(product.barcode || "-") + "</p>",
         "<p>HSN/SAC: " + utils.escapeHtml(product.hsn || "-") + " | GST: " + utils.escapeHtml(String(product.gstRate)) + "%</p>",
         "<p>Price: " + utils.formatCurrency(product.price) + "</p>",
         "</article>"

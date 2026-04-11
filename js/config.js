@@ -25,6 +25,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       customers: "ledgerflow-customers",
       products: "ledgerflow-products",
       invoices: "ledgerflow-invoices",
+      expenses: "ledgerflow-expenses",
       sidebar: "ledgerflow-sidebar-collapsed"
     },
     STATES: [
@@ -36,11 +37,10 @@ window.LedgerFlow = window.LedgerFlow || {};
     MODULES: {
       dashboard: {
         title: "Dashboard",
-        description: "See the overall business picture, then jump into billing, customers, products, and admin setup.",
+        description: "See today's sale, expense, net, and trend widgets in one place.",
         menuTitle: "Dashboard Actions",
         menu: [
-          { label: "Overview", target: "dashboard-overview" },
-          { label: "Recent Activity", target: "dashboard-activity" }
+          { label: "Overview", target: "dashboard-overview" }
         ]
       },
       invoices: {

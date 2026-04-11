@@ -12,6 +12,9 @@
       document.documentElement.setAttribute("data-theme", stored || (prefersDark ? "dark" : "light"));
     })();
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -24,7 +27,9 @@
         </a>
       </div>
       <div class="site-actions">
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">Dark</button>
+        <button id="theme-toggle" class="theme-toggle openclaw-theme-toggle" type="button" aria-label="Toggle theme" title="Switch to dark mode">
+          <span class="openclaw-theme-toggle-icon">☾</span>
+        </button>
       </div>
     </header>
 
@@ -75,70 +80,79 @@
 
         <section class="workspace-content">
           <section class="module-screen is-active" data-module="dashboard">
-            <div class="content-grid content-grid--two">
-              <article id="dashboard-overview" class="panel module-card">
-                <div class="panel-head">
-                  <div>
-                    <div class="eyebrow">Overview</div>
-                    <h2>Business snapshot</h2>
-                  </div>
-                </div>
-                <div class="dashboard-summary-grid">
-                  <div class="summary-card">
-                    <span>Billing status</span>
-                    <strong id="dashboard-billing-status">Ready</strong>
-                    <p>Use billing to generate quick bills and GST-ready customer invoices.</p>
-                  </div>
-                  <div class="summary-card">
-                    <span>Company state</span>
-                    <strong id="dashboard-company-state">-</strong>
-                    <p>Used to split tax into CGST, SGST, or IGST.</p>
-                  </div>
-                  <div class="summary-card">
-                    <span>Latest bill</span>
-                    <strong id="dashboard-latest-invoice">None yet</strong>
-                    <p>Recent activity will appear here as you save bills and invoices.</p>
-                  </div>
-                </div>
+            <section id="dashboard-overview" class="dashboard-widget-grid dashboard-widget-grid--top">
+              <article class="panel module-card dashboard-widget dashboard-widget--metric">
+                <div class="dashboard-widget__label">Today's Sale</div>
+                <strong id="dashboard-today-sales" class="dashboard-widget__value">₹0.00</strong>
+                <p class="dashboard-widget__note">Saved bills and invoices dated today.</p>
               </article>
 
-              <article id="dashboard-activity" class="panel module-card">
-                <div class="panel-head">
-                  <div>
-                    <div class="eyebrow">Recent Activity</div>
-                    <h2>Latest bills</h2>
-                  </div>
-                </div>
-                <div id="dashboard-invoice-list" class="data-list"></div>
+              <article class="panel module-card dashboard-widget dashboard-widget--metric">
+                <div class="dashboard-widget__label">Today's Expense</div>
+                <strong id="dashboard-today-expense" class="dashboard-widget__value">₹0.00</strong>
+                <p class="dashboard-widget__note">Payable and operating outflow booked today.</p>
               </article>
-            </div>
+
+              <article class="panel module-card dashboard-widget dashboard-widget--metric">
+                <div class="dashboard-widget__label">Net Today</div>
+                <strong id="dashboard-today-net" class="dashboard-widget__value">₹0.00</strong>
+                <p class="dashboard-widget__note">Today's sale minus today's expense.</p>
+              </article>
+            </section>
+
+            <article id="dashboard-sales-trend" class="panel module-card dashboard-widget dashboard-widget--chart module-card--spaced">
+              <div class="panel-head dashboard-chart__toolbar">
+                <div>
+                  <h2>Business trend</h2>
+                  <p class="dashboard-chart__subtext">Select one metric at a time for a cleaner view of business movement.</p>
+                </div>
+                <label class="dashboard-chart__range" for="dashboard-chart-range">
+                  <span>Range</span>
+                  <select id="dashboard-chart-range" name="dashboardChartRange">
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month" selected>This Month</option>
+                  </select>
+                </label>
+              </div>
+              <div id="dashboard-series-toggle" class="dashboard-series-toggle" role="tablist" aria-label="Select dashboard trend metric">
+                <button class="dashboard-series-toggle__button is-active" type="button" data-series="sales">Sale</button>
+                <button class="dashboard-series-toggle__button" type="button" data-series="expense">Expense</button>
+                <button class="dashboard-series-toggle__button" type="button" data-series="net">Net</button>
+              </div>
+              <div id="dashboard-chart" class="dashboard-chart"></div>
+            </article>
           </section>
 
           <section class="module-screen" data-module="invoices">
             <section id="billing-quick-bill-view" class="billing-view is-active" data-billing-view="quick-bill">
               <article id="billing-quick-bill" class="panel module-card module-card--spaced">
-                <div class="panel-head">
+                <div class="panel-head" style="display: flex; justify-content: space-between; align-items: flex-start;">
                   <div>
-                    <div class="eyebrow">Quick Bill</div>
                     <h2>Counter billing</h2>
                   </div>
+                  <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="document.querySelector('[data-billing-view=\'invoice\']').click()">⚙️ B2B / Add Details &rarr;</button>
                 </div>
-                <p class="panel__lead">Use this billing area for fast counter sales today. Quick Bill stays lightweight, while the invoice section handles full GST invoice output when you need it.</p>
-                <div class="dashboard-summary-grid">
-                  <div class="summary-card">
-                    <span>Walk-in friendly</span>
-                    <strong>Fast name entry</strong>
-                    <p>Type a new customer name directly or choose a saved customer from suggestions.</p>
+                <p class="panel__lead">Focus your cursor in the box below to use a hardware barcode scanner, or click Camera to scan with your phone.</p>
+                <div class="scanner-interface">
+                  <div class="scanner-controls" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="quick-barcode-input" placeholder="Scan barcode or type and press Enter..." style="flex: 1; padding: 12px; font-size: 1.1rem; border: 2px solid var(--border); border-radius: 8px;">
+                    <button type="button" id="start-camera-scan" class="button button--primary">📷 Camera</button>
                   </div>
-                  <div class="summary-card">
-                    <span>Ready for expansion</span>
-                    <strong>Barcode-ready path</strong>
-                    <p>This section is set up so barcode scanning can be added next without changing the full billing module.</p>
+                  <div id="camera-reader-status" style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);"></div>
+                  <div id="camera-reader" style="width: 100%; max-width: 500px; display: none; margin: 0 auto 20px auto;"></div>
+                  <div id="quick-bill-cart-container" style="margin-bottom: 20px;">
+                    <!-- Cart items will be dynamically rendered here -->
                   </div>
-                  <div class="summary-card">
-                    <span>Shared totals</span>
-                    <strong>One billing engine</strong>
-                    <p>Quick Bill and Invoice will continue sharing products, tax calculations, preview, and print flow.</p>
+                  
+                  <div class="quick-bill-actions" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 10px;">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text);">
+                      Total: <span id="quick-bill-total">₹0.00</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                      <button type="button" id="save-quick-bill-upi" class="button button--secondary" style="font-weight: bold; border-color: #00baf2; color: #00baf2;">UPI Payment</button>
+                      <button type="button" id="save-quick-bill-cash" class="button button--primary" style="font-weight: bold; background-color: #28a745; border-color: #28a745;">💵 Cash Paid</button>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -149,7 +163,6 @@
                 <article id="invoice-create" class="panel module-card">
                   <div class="panel-head">
                     <div>
-                      <div class="eyebrow">Invoice</div>
                       <h2>GST invoice</h2>
                     </div>
                   </div>
@@ -161,6 +174,20 @@
                     <label>
                       <span>Invoice date</span>
                       <input id="invoice-date" name="invoiceDate" type="date" required>
+                    </label>
+                    <label>
+                      <span>Document type</span>
+                      <select id="invoice-type" name="invoiceType">
+                        <option value="tax_invoice">Tax Invoice</option>
+                        <option value="estimate">Estimate</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Payment status</span>
+                      <select id="invoice-status" name="paymentStatus">
+                        <option value="unpaid">Unpaid</option>
+                        <option value="paid">Paid</option>
+                      </select>
                     </label>
                     <label class="field-span">
                       <span>Customer</span>
@@ -199,7 +226,6 @@
                 <aside id="invoice-preview-panel" class="panel preview-panel">
                   <div class="panel-head">
                     <div>
-                      <div class="eyebrow">Live Preview</div>
                       <h2>Invoice output</h2>
                     </div>
                   </div>
@@ -210,7 +236,6 @@
               <article id="invoice-history-panel" class="panel module-card module-card--spaced">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Saved Bills</div>
                     <h2>Billing history</h2>
                   </div>
                 </div>
@@ -224,7 +249,6 @@
               <article id="customer-add" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div id="customer-form-eyebrow" class="eyebrow">Customer Master</div>
                     <h2 id="customer-form-title">Add customer</h2>
                   </div>
                 </div>
@@ -292,7 +316,6 @@
               <article id="customer-list-panel" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Customer Records</div>
                     <h2>Customer list</h2>
                   </div>
                   <button id="customer-refresh-button" class="button button--secondary" type="button">Refresh</button>
@@ -307,7 +330,6 @@
               <article id="product-add" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Product Master</div>
                     <h2>Add item</h2>
                   </div>
                 </div>
@@ -315,6 +337,10 @@
                   <label>
                     <span>Item name</span>
                     <input id="product-name" name="productName" type="text" required>
+                  </label>
+                  <label>
+                    <span>Barcode ID / SKU</span>
+                    <input id="product-barcode" name="productBarcode" type="text" placeholder="Optional">
                   </label>
                   <label>
                     <span>HSN or SAC</span>
@@ -335,7 +361,6 @@
               <article id="product-list-panel" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Product Records</div>
                     <h2>Product list</h2>
                   </div>
                 </div>
@@ -349,7 +374,6 @@
               <article id="admin-company" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Admin</div>
                     <h2>Business details</h2>
                   </div>
                 </div>
@@ -458,7 +482,6 @@
               <article id="admin-controls" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <div class="eyebrow">Admin Summary</div>
                     <h2>Current configuration</h2>
                   </div>
                 </div>
@@ -500,7 +523,12 @@
   <script src="js/modules/invoices-module.js"></script>
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <script src="erp.js"></script>
 </body>
 </html>
+
+
+
+
 

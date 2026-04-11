@@ -11,6 +11,86 @@ window.LedgerFlow = window.LedgerFlow || {};
       app.activeBillingView = "quick-bill";
     }
 
+    // Independent POS cart - never touches the B2B form
+    if (!app.quickBillCart) {
+      app.quickBillCart = [];
+    }
+
+    var html5QrcodeScanner = null;
+
+    var quickBarcodeInput = document.getElementById("quick-barcode-input");
+    if (quickBarcodeInput) {
+      quickBarcodeInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          scanProduct(app, quickBarcodeInput.value.trim());
+          quickBarcodeInput.value = "";
+        }
+      });
+    }
+    var saveQuickCashBtn = document.getElementById("save-quick-bill-cash");
+    if (saveQuickCashBtn) {
+      saveQuickCashBtn.addEventListener("click", function() {
+        submitQuickBill(app, "cash");
+      });
+    }
+
+    var saveQuickUpiBtn = document.getElementById("save-quick-bill-upi");
+    if (saveQuickUpiBtn) {
+      saveQuickUpiBtn.addEventListener("click", function() {
+        submitQuickBill(app, "upi");
+      });
+    }
+
+    var quickCartContainer = document.getElementById("quick-bill-cart-container");
+    if (quickCartContainer) {
+      quickCartContainer.addEventListener("click", function(event) {
+        if (event.target.classList.contains("remove-quick-cart-item")) {
+          var rowIndex = parseInt(event.target.dataset.index, 10);
+          if (rowIndex >= 0 && rowIndex < app.quickBillCart.length) {
+            app.quickBillCart.splice(rowIndex, 1);
+            renderQuickBillCart(app);
+          }
+        }
+      });
+    }
+
+    var cameraBtn = document.getElementById("start-camera-scan");
+    if (cameraBtn) {
+      cameraBtn.addEventListener("click", function () {
+        var readerEl = document.getElementById("camera-reader");
+        var statusEl = document.getElementById("camera-reader-status");
+        
+        if (readerEl.style.display === "block") {
+           readerEl.style.display = "none";
+           this.textContent = "📷 Camera";
+           if (html5QrcodeScanner) {
+             html5QrcodeScanner.clear();
+           }
+           return;
+        }
+
+        if (typeof Html5QrcodeScanner !== "undefined") {
+          readerEl.style.display = "block";
+          this.textContent = "🛑 Stop Camera";
+          if (statusEl) statusEl.textContent = "Starting camera...";
+          
+          html5QrcodeScanner = new Html5QrcodeScanner(
+            "camera-reader",
+            { fps: 10, qrbox: {width: 250, height: 250} },
+            false
+          );
+          
+          html5QrcodeScanner.render(function (decodedText) {
+             scanProduct(app, decodedText);
+             // html5QrcodeScanner.clear(); // Could stop on detect, but let's allow multi scan
+          }, function (error) {});
+        } else {
+          if (statusEl) statusEl.textContent = "Scanner library not loaded. Check internet connection.";
+        }
+      });
+    }
+
     app.elements.invoiceCustomerNameInput.addEventListener("input", function () {
       handleCustomerNameInput(app);
     });
@@ -188,9 +268,16 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function renderPreview(app, invoice) {
+    // Keep B2B totals accurate independently of Quick Bill
+    var items = collectLineItems(app);
+    var liveTotals = items.length ? calculateTotals(app, resolveCustomer(app) || {}, items) : emptyTotals();
+
+    // Quick Bill cart is driven by its own state, not B2B form
+    renderQuickBillCart(app);
+
     if (!invoice) {
       app.elements.invoicePreview.innerHTML = '<div class="empty-state">Add invoice details to see the preview.</div>';
-      updateTotals(app, emptyTotals());
+      updateTotals(app, liveTotals);
       return;
     }
 
@@ -198,11 +285,101 @@ window.LedgerFlow = window.LedgerFlow || {};
     updateTotals(app, invoice.totals);
   }
 
+  function renderQuickBillCart(app) {
+    var cart = app.quickBillCart || [];
+    var container = document.getElementById("quick-bill-cart-container");
+    if (!container) return;
+
+    if (!cart.length) {
+      container.innerHTML = '<div style="padding: 20px; font-size: 0.95rem; color: var(--text-muted); text-align: center; border: 2px dashed var(--border); border-radius: 8px;">Cart is empty — scan a product to begin.</div>';
+      // Also reset total display
+      var totalEl = document.getElementById("quick-bill-total");
+      if (totalEl) totalEl.textContent = '\u20b90.00';
+      return;
+    }
+
+    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
+    var totals = calculateTotals(app, defaultCustomer, cart);
+
+    // Update the grand total display
+    var totalEl = document.getElementById("quick-bill-total");
+    if (totalEl) totalEl.textContent = utils.formatCurrency(totals.grandTotal);
+
+    var header = '<div style="display: flex; align-items: center; padding: 8px 16px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 2px solid var(--border); margin-bottom: 4px;">'
+      + '<div style="flex: 2;">Product</div>'
+      + '<div style="flex: 1; text-align: center;">Qty</div>'
+      + '<div style="flex: 1; text-align: right;">Amount</div>'
+      + '<div style="flex: 0.5;"></div>'
+      + '</div>';
+
+    var tableRows = cart.map(function(item, index) {
+      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
+      return '<div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px;">'
+        + '<div style="flex: 2; font-weight: 500; color: var(--text);">' + utils.escapeHtml(item.name) + '</div>'
+        + '<div style="flex: 1; text-align: center; color: var(--text);">\u00d7 <strong>' + utils.escapeHtml(String(item.quantity)) + '</strong></div>'
+        + '<div style="flex: 1; text-align: right; font-weight: 600; color: var(--text);">' + utils.formatCurrency(lineTotal) + '</div>'
+        + '<div style="flex: 0.5; text-align: right;"><button type="button" class="remove-quick-cart-item" data-index="' + index + '" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2rem; line-height: 1;" title="Remove Item">\u2715</button></div>'
+        + '</div>';
+    }).join('');
+
+    container.innerHTML = '<div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">' + header + '<div style="max-height: 300px; overflow-y: auto;">' + tableRows + '</div></div>';
+  }
+
+  function submitQuickBill(app, paymentMethod) {
+    var cart = app.quickBillCart || [];
+    if (!cart.length) {
+      var statusEl = document.getElementById("camera-reader-status");
+      if (statusEl) {
+        statusEl.innerHTML = '<span style="color: var(--danger);">Please scan at least one item before charging.</span>';
+        setTimeout(function() { statusEl.innerHTML = ""; }, 3000);
+      }
+      return;
+    }
+
+    var defaultCustomer = {
+      name: "Walk-in Customer",
+      address: "",
+      state: app.data.company && app.data.company.state ? app.data.company.state : "Unknown",
+      mobile: "",
+      email: "",
+      gstNumber: ""
+    };
+
+    var draft = {
+      id: utils.createId("INV"),
+      invoiceType: "tax_invoice",
+      paymentStatus: "paid",
+      invoiceNumber: nextInvoiceNumber(app),
+      invoiceDate: utils.today(),
+      company: utils.clone(app.data.company),
+      customer: defaultCustomer,
+      notes: paymentMethod === 'upi' ? "Automated POS Checkout: Paid via UPI" : "Automated POS Checkout: Cash Paid",
+      items: cart,
+      totals: calculateTotals(app, defaultCustomer, cart)
+    };
+
+    app.data.invoices.unshift(draft);
+    app.persist();
+
+    // Flash success and wipe the POS cart
+    var successEl = document.getElementById("camera-reader-status");
+    if (successEl) {
+      successEl.innerHTML = '<span style="color: var(--success);">\u2705 Checkout done: Invoice ' + draft.invoiceNumber + ' saved as Paid.</span>';
+      setTimeout(function() { successEl.innerHTML = ""; }, 3000);
+    }
+
+    app.quickBillCart = [];
+    renderQuickBillCart(app);
+    app.renderAll();
+  }
+
   function collectInvoiceDraft(app, strict) {
     var customer = resolveCustomer(app);
     var items = collectLineItems(app);
     var invoiceNumber = valueOf("invoice-number");
     var invoiceDate = valueOf("invoice-date");
+    var invoiceType = valueOf("invoice-type") || "tax_invoice";
+    var paymentStatus = valueOf("invoice-status") || "unpaid";
 
     if (!customer || !items.length || !invoiceNumber || !invoiceDate) {
       if (strict) {
@@ -213,6 +390,8 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     return {
       id: utils.createId("INV"),
+      invoiceType: invoiceType,
+      paymentStatus: paymentStatus,
       invoiceNumber: invoiceNumber,
       invoiceDate: invoiceDate,
       company: utils.clone(app.data.company),
@@ -287,6 +466,8 @@ window.LedgerFlow = window.LedgerFlow || {};
     var keepPreview = !!(options && options.keepPreview);
 
     app.elements.invoiceForm.reset();
+    document.getElementById("invoice-type").value = "tax_invoice";
+    document.getElementById("invoice-status").value = "unpaid";
     app.elements.invoiceCustomerSelect.value = "";
     app.elements.invoiceCustomerNameInput.value = "";
     hideCustomerSuggestions(app);
@@ -347,7 +528,9 @@ window.LedgerFlow = window.LedgerFlow || {};
       '<section class="invoice-sheet">',
       '<div class="invoice-sheet__head">',
       '<div><h3>' + utils.escapeHtml(invoice.company.name) + '</h3><p>' + utils.escapeHtml(invoice.company.address) + '</p><p>GSTIN: ' + utils.escapeHtml(invoice.company.gstin || "-") + '</p></div>',
-      '<div><h3>Tax Invoice</h3><p>Invoice No: ' + utils.escapeHtml(invoice.invoiceNumber) + '</p><p>Date: ' + utils.escapeHtml(invoice.invoiceDate) + '</p><p>State: ' + utils.escapeHtml(invoice.company.state) + '</p></div>',
+      '<div style="position:relative;">',
+      (invoice.paymentStatus === 'paid' && invoice.invoiceType !== 'estimate' ? '<div style="position:absolute; top:0; right:0; color:#28a745; border:3px solid #28a745; padding:4px 12px; font-weight:bold; font-size:1.5rem; text-transform:uppercase; transform:rotate(-5deg); opacity:0.8; border-radius:6px; letter-spacing:2px;">PAID</div>' : ''),
+      '<h3>' + (invoice.invoiceType === "estimate" ? "Estimate" : "Tax Invoice") + '</h3><p>Invoice No: ' + utils.escapeHtml(invoice.invoiceNumber) + '</p><p>Date: ' + utils.escapeHtml(invoice.invoiceDate) + '</p><p>State: ' + utils.escapeHtml(invoice.company.state) + '</p></div>',
       '</div>',
       '<div class="invoice-sheet__meta">',
       '<div><h4>Bill To</h4><p>' + utils.escapeHtml(invoice.customer.name) + '</p><p>' + utils.escapeHtml(invoice.customer.address || "-") + '</p><p>GSTIN: ' + utils.escapeHtml(customerGstin) + '</p></div>',
@@ -374,6 +557,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       '<div class="history-head">',
       '<span class="history-head__cell history-head__cell--invoice">Invoice</span>',
       '<span class="history-head__cell history-head__cell--date">Date</span>',
+      '<span class="history-head__cell history-head__cell--status">Status</span>',
       '<span class="history-head__cell history-head__cell--customer">Customer</span>',
       '<span class="history-head__cell history-head__cell--total">Total</span>',
       '<span class="history-head__cell history-head__cell--action">Action</span>',
@@ -386,10 +570,20 @@ window.LedgerFlow = window.LedgerFlow || {};
     }
 
     app.elements.invoiceHistory.innerHTML = head + app.data.invoices.map(function (invoice) {
+      var statusBadge = '';
+      if (invoice.invoiceType === 'estimate') {
+        statusBadge = '<span class="status-badge status-badge--estimate">🟡 Estimate</span>';
+      } else if (invoice.paymentStatus === 'paid') {
+        statusBadge = '<span class="status-badge status-badge--paid">🟢 Paid</span>';
+      } else {
+        statusBadge = '<span class="status-badge status-badge--unpaid">🔴 Unpaid</span>';
+      }
+
       return [
         '<div class="history-row">',
         '<strong class="history-row__title">' + utils.escapeHtml(invoice.invoiceNumber) + "</strong>",
         '<span class="history-row__cell history-row__cell--date">' + utils.escapeHtml(invoice.invoiceDate) + "</span>",
+        '<span class="history-row__cell history-row__cell--status">' + statusBadge + "</span>",
         '<span class="history-row__cell history-row__cell--customer">' + utils.escapeHtml(invoice.customer.name) + "</span>",
         '<span class="history-row__cell history-row__cell--total">' + utils.formatCurrency(invoice.totals.grandTotal) + "</span>",
         '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '">View</button>',
@@ -425,6 +619,50 @@ window.LedgerFlow = window.LedgerFlow || {};
         row.querySelector(".line-gst").value = nextProduct.gstRate;
       }
     });
+  }
+
+  function scanProduct(app, barcode) {
+    if (!barcode) return;
+    var product = app.data.products.find(function(p) { return p.barcode === barcode || p.id === barcode; });
+    var statusEl = document.getElementById("camera-reader-status");
+
+    if (!product) {
+      if (statusEl) {
+        statusEl.textContent = "\u274c Product not found for barcode: " + barcode;
+        statusEl.style.color = "var(--danger)";
+      }
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.textContent = "\u2705 Added: " + product.name;
+      statusEl.style.color = "var(--success)";
+      setTimeout(function() { statusEl.textContent = ""; }, 2000);
+    }
+
+    // Work purely on the independent quickBillCart array
+    if (!app.quickBillCart) app.quickBillCart = [];
+
+    var existingItem = app.quickBillCart.find(function(item) {
+      return item.productId === String(product.id);
+    });
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+      existingItem.taxableValue = existingItem.quantity * existingItem.rate;
+    } else {
+      app.quickBillCart.push({
+        productId: String(product.id),
+        name: product.name,
+        hsn: product.hsn || "",
+        quantity: 1,
+        rate: parseFloat(product.price) || 0,
+        gstRate: parseFloat(product.gstRate) || 0,
+        taxableValue: parseFloat(product.price) || 0
+      });
+    }
+
+    renderQuickBillCart(app);
   }
 
   function resolveCustomer(app) {

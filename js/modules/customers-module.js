@@ -1,36 +1,49 @@
 window.LedgerFlow = window.LedgerFlow || {};
 
 (function (ns) {
-  var customerApi = ns.customerApi;
   var utils = ns.utils;
 
   ns.modules = ns.modules || {};
 
-  // Customer module manages backend sync plus the customer master form and list.
+  // Customer module — fully local-first (localStorage via app.data.customers).
+  // No backend dependency.
   function init(app) {
-    app.elements.customerForm.addEventListener("submit", async function (event) {
-      var customerId = app.elements.customerIdInput.value;
+    app.elements.customerForm.addEventListener("submit", function (event) {
+      var customerId = app.elements.customerIdInput.value.trim();
       var payload = buildPayload(app);
-      var savedCustomer;
+      var validationError = validatePayload(payload);
 
       event.preventDefault();
 
-      try {
-        if (customerId) {
-          savedCustomer = await customerApi.updateCustomer(customerId, payload);
-          upsertCustomer(app, savedCustomer);
-        } else {
-          savedCustomer = await customerApi.createCustomer(payload);
-          upsertCustomer(app, savedCustomer);
+      if (validationError) {
+        setMessage(app, validationError, "error");
+        return;
+      }
+
+      if (customerId) {
+        // Update existing
+        var index = app.data.customers.findIndex(function (c) {
+          return String(c.id) === String(customerId);
+        });
+
+        if (index !== -1) {
+          app.data.customers[index] = Object.assign({}, app.data.customers[index], payload, { id: customerId });
         }
 
-        app.persist();
-        app.renderAll();
-        resetForm(app);
-        setMessage(app, customerId ? "Customer updated successfully." : "Customer added successfully.", "success");
-      } catch (error) {
-        setMessage(app, error.message, "error");
+        setMessage(app, "Customer updated successfully.", "success");
+      } else {
+        // Create new
+        var newCustomer = Object.assign({}, payload, {
+          id: utils.createId("CUS"),
+          createdAt: new Date().toISOString()
+        });
+        app.data.customers.unshift(newCustomer);
+        setMessage(app, "Customer added successfully.", "success");
       }
+
+      app.persist();
+      app.renderAll();
+      resetForm(app);
     });
 
     if (app.elements.customerCancelButton) {
@@ -39,14 +52,15 @@ window.LedgerFlow = window.LedgerFlow || {};
       });
     }
 
+    // Refresh button — no backend, just re-render from localStorage
     if (app.elements.customerRefreshButton) {
-      app.elements.customerRefreshButton.addEventListener("click", async function () {
-        await syncFromBackend(app, true);
+      app.elements.customerRefreshButton.addEventListener("click", function () {
         app.renderAll();
+        setMessage(app, "Customer list refreshed.", "success");
       });
     }
 
-    app.elements.customerList.addEventListener("click", async function (event) {
+    app.elements.customerList.addEventListener("click", function (event) {
       var action = event.target.dataset.customerAction;
       var customerId = event.target.dataset.customerId;
       var customer;
@@ -56,41 +70,34 @@ window.LedgerFlow = window.LedgerFlow || {};
       }
 
       if (action === "edit") {
-        try {
-          customer = await customerApi.getCustomer(customerId);
-          upsertCustomer(app, customer);
-          app.persist();
-          app.renderAll();
+        customer = app.data.customers.find(function (c) {
+          return String(c.id) === String(customerId);
+        });
+
+        if (customer) {
           fillForm(app, customer);
           setMessage(app, "Editing customer " + customer.name + ".", "success");
           document.getElementById("customer-add").scrollIntoView({ behavior: "smooth", block: "start" });
-        } catch (error) {
-          setMessage(app, error.message, "error");
         }
         return;
       }
 
       if (action === "delete") {
-        if (!window.confirm("Delete this customer?")) {
+        if (!window.confirm("Delete this customer? This cannot be undone.")) {
           return;
         }
 
-        try {
-          await customerApi.deleteCustomer(customerId);
-          app.data.customers = app.data.customers.filter(function (item) {
-            return String(item.id) !== String(customerId);
-          });
-          app.persist();
-          app.renderAll();
+        app.data.customers = app.data.customers.filter(function (item) {
+          return String(item.id) !== String(customerId);
+        });
 
-          if (String(app.elements.customerIdInput.value) === String(customerId)) {
-            resetForm(app);
-          }
-
-          setMessage(app, "Customer deleted successfully.", "success");
-        } catch (error) {
-          setMessage(app, error.message, "error");
+        if (String(app.elements.customerIdInput.value) === String(customerId)) {
+          resetForm(app);
         }
+
+        app.persist();
+        app.renderAll();
+        setMessage(app, "Customer deleted.", "success");
       }
     });
   }
@@ -100,28 +107,9 @@ window.LedgerFlow = window.LedgerFlow || {};
     renderCustomerOptions(app);
   }
 
-  async function syncFromBackend(app, showStatus) {
-    try {
-      app.data.customers = await customerApi.listCustomers();
-      app.persist();
-
-      if (showStatus) {
-        setMessage(app, "Customers synced from backend successfully.", "success");
-      }
-
-      return "";
-    } catch (error) {
-      if (showStatus) {
-        setMessage(app, error.message, "error");
-      }
-
-      return error.message;
-    }
-  }
-
   function renderList(app) {
     if (!app.data.customers.length) {
-      app.elements.customerList.innerHTML = '<div class="empty-state">No customers available from the backend yet.</div>';
+      app.elements.customerList.innerHTML = '<div class="empty-state">No customers yet. Add your first customer above.</div>';
       return;
     }
 
@@ -202,8 +190,6 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   function setFormMode(app, mode) {
     var isEdit = mode === "edit";
-
-    app.elements.customerFormEyebrow.textContent = isEdit ? "Customer Editor" : "Customer Master";
     app.elements.customerFormTitle.textContent = isEdit ? "Edit customer" : "Add customer";
     app.elements.customerSubmitButton.textContent = isEdit ? "Update customer" : "Add customer";
     app.elements.customerCancelButton.hidden = !isEdit;
@@ -218,53 +204,54 @@ window.LedgerFlow = window.LedgerFlow || {};
     }
   }
 
-  function upsertCustomer(app, customer) {
-    var index = app.data.customers.findIndex(function (item) {
-      return String(item.id) === String(customer.id);
-    });
-
-    if (index === -1) {
-      app.data.customers.unshift(customer);
-      return;
+  function validatePayload(payload) {
+    if (!payload.name) {
+      return "Customer name is required.";
     }
-
-    app.data.customers[index] = customer;
+    return null;
   }
 
   function buildPayload(app) {
     return {
       name: valueOf("customer-name"),
       mobile: valueOf("customer-mobile"),
-      customer_type: app.elements.customerTypeSelect.value,
-      company_name: valueOf("customer-company-name") || null,
-      address: valueOf("customer-address") || null,
-      gst_number: valueOf("customer-gst-number") || null,
-      opening_balance: numberOrDefault("customer-opening-balance", 0),
-      credit_limit: nullableNumber("customer-credit-limit"),
-      email: valueOf("customer-email") || null,
-      city: valueOf("customer-city") || null,
-      state: app.elements.customerStateSelect.value || null,
-      pincode: valueOf("customer-pincode") || null
+      customerType: app.elements.customerTypeSelect.value,
+      companyName: valueOf("customer-company-name") || "",
+      address: valueOf("customer-address") || "",
+      gstNumber: valueOf("customer-gst-number") || "",
+      openingBalance: numberOrDefault("customer-opening-balance", 0),
+      creditLimit: nullableNumber("customer-credit-limit"),
+      email: valueOf("customer-email") || "",
+      city: valueOf("customer-city") || "",
+      state: app.elements.customerStateSelect.value || "",
+      pincode: valueOf("customer-pincode") || ""
     };
   }
 
   function valueOf(id) {
-    return document.getElementById(id).value.trim();
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
   }
 
   function numberOrDefault(id, fallback) {
-    var numericValue = parseFloat(document.getElementById(id).value);
+    var el = document.getElementById(id);
+    var numericValue = parseFloat(el ? el.value : "");
     return Number.isNaN(numericValue) ? fallback : numericValue;
   }
 
   function nullableNumber(id) {
-    var rawValue = document.getElementById(id).value.trim();
-
-    if (!rawValue) {
-      return null;
-    }
-
+    var el = document.getElementById(id);
+    var rawValue = el ? el.value.trim() : "";
+    if (!rawValue) return null;
     return numberOrDefault(id, null);
+  }
+
+  // syncFromBackend kept as a no-op for API compatibility (called elsewhere in the app)
+  function syncFromBackend(app, showStatus) {
+    if (showStatus) {
+      setMessage(app, "This app stores customers locally — no sync needed.", "success");
+    }
+    return Promise.resolve("");
   }
 
   ns.modules.customers = {

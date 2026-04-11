@@ -46,7 +46,6 @@ window.LedgerFlow = window.LedgerFlow || {};
       lineItemsContainer: document.getElementById("line-items"),
       addLineItemButton: document.getElementById("add-line-item"),
       customerList: document.getElementById("customer-list"),
-      customerFormEyebrow: document.getElementById("customer-form-eyebrow"),
       customerFormTitle: document.getElementById("customer-form-title"),
       customerFormMessage: document.getElementById("customer-form-message"),
       customerSubmitButton: document.getElementById("customer-submit-button"),
@@ -64,10 +63,13 @@ window.LedgerFlow = window.LedgerFlow || {};
       featureButtons: Array.prototype.slice.call(document.querySelectorAll(".feature-button")),
       moduleScreens: Array.prototype.slice.call(document.querySelectorAll(".module-screen")),
       billingViews: Array.prototype.slice.call(document.querySelectorAll(".billing-view")),
-      dashboardInvoiceList: document.getElementById("dashboard-invoice-list"),
-      dashboardBillingStatus: document.getElementById("dashboard-billing-status"),
-      dashboardCompanyState: document.getElementById("dashboard-company-state"),
-      dashboardLatestInvoice: document.getElementById("dashboard-latest-invoice"),
+      dashboardTodaySales: document.getElementById("dashboard-today-sales"),
+      dashboardTodayExpense: document.getElementById("dashboard-today-expense"),
+      dashboardTodayNet: document.getElementById("dashboard-today-net"),
+      dashboardChartRangeSelect: document.getElementById("dashboard-chart-range"),
+      dashboardSeriesToggle: document.getElementById("dashboard-series-toggle"),
+      dashboardSeriesButtons: Array.prototype.slice.call(document.querySelectorAll(".dashboard-series-toggle__button")),
+      dashboardChart: document.getElementById("dashboard-chart"),
       adminCompanyName: document.getElementById("admin-company-name"),
       adminCompanyGstin: document.getElementById("admin-company-gstin"),
       adminCompanyState: document.getElementById("admin-company-state"),
@@ -94,3 +96,6 @@ window.LedgerFlow = window.LedgerFlow || {};
     collect: collect
   };
 })(window.LedgerFlow);
+
+
+

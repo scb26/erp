@@ -175,17 +175,29 @@ window.LedgerFlow = window.LedgerFlow || {};
     });
 
     app.elements.invoiceHistory.addEventListener("click", function (event) {
-      if (!event.target.dataset.invoiceId) {
+      var invoiceId = event.target.dataset.invoiceId;
+      var action = event.target.dataset.invoiceAction || "view";
+
+      if (!invoiceId) {
         return;
       }
 
       app.previewInvoice = app.data.invoices.find(function (savedInvoice) {
-        return String(savedInvoice.id) === String(event.target.dataset.invoiceId);
+        return String(savedInvoice.id) === String(invoiceId);
       }) || null;
+
+      if (!app.previewInvoice) {
+        return;
+      }
 
       renderPreview(app, app.previewInvoice);
       setActiveBillingView(app, "invoice");
       app.setActiveModule("invoices");
+
+      if (action === "pdf") {
+        downloadInvoicePdf(app, app.previewInvoice);
+      }
+
       document.getElementById("invoice-preview-panel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
@@ -196,6 +208,19 @@ window.LedgerFlow = window.LedgerFlow || {};
         printInvoice(draft);
       }
     });
+
+    if (app.elements.downloadPdfButton) {
+      app.elements.downloadPdfButton.addEventListener("click", function () {
+        var draft = app.previewInvoice || collectInvoiceDraft(app, false);
+
+        if (!draft) {
+          setMessage(app, "Add invoice details before downloading a PDF.", "error");
+          return;
+        }
+
+        downloadInvoicePdf(app, draft);
+      });
+    }
   }
 
   function render(app) {
@@ -507,6 +532,106 @@ window.LedgerFlow = window.LedgerFlow || {};
     win.document.close();
   }
 
+  function downloadInvoicePdf(app, invoice) {
+    var jsPdfApi = window.jspdf;
+    var doc;
+    var pageWidth;
+    var pageHeight;
+    var margin = 18;
+    var y = margin;
+    var leftCardWidth = 106;
+    var notesBottom;
+    var signatureBaseY;
+
+    if (!jsPdfApi || typeof jsPdfApi.jsPDF !== "function") {
+      setMessage(app, "PDF engine is unavailable. Refresh the page and try again.", "error");
+      return;
+    }
+
+    doc = new jsPdfApi.jsPDF({ unit: "mm", format: "a4" });
+    pageWidth = doc.internal.pageSize.getWidth();
+    pageHeight = doc.internal.pageSize.getHeight();
+
+    addBrandImage(doc, invoice.company.logoDataUrl, margin, y, 28, 18);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text(String(invoice.company.name || "Invoice"), margin + 34, y + 7);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    y = writeMultilineText(doc, [
+      invoice.company.address || "",
+      "GSTIN: " + (invoice.company.gstin || "-"),
+      "Phone: " + (invoice.company.phone || "-"),
+      "Email: " + (invoice.company.email || "-")
+    ], margin + 34, y + 14, pageWidth - (margin * 2) - 34, 4.8);
+
+    doc.setDrawColor(214, 235, 247);
+    doc.line(margin, y + 3, pageWidth - margin, y + 3);
+    y += 10;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(invoice.invoiceType === "estimate" ? "Estimate" : "Tax Invoice", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Invoice No: " + (invoice.invoiceNumber || "-"), pageWidth - margin, y, { align: "right" });
+    y += 6;
+    doc.text("Invoice Date: " + (invoice.invoiceDate || "-"), margin, y);
+    doc.text("Payment Status: " + formatInvoiceStatus(invoice), pageWidth - margin, y, { align: "right" });
+    y += 8;
+
+    doc.setFillColor(247, 251, 253);
+    doc.roundedRect(margin, y, leftCardWidth, 28, 3, 3, "F");
+    doc.roundedRect(margin + leftCardWidth + 6, y, pageWidth - (margin * 2) - leftCardWidth - 6, 28, 3, 3, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text("Bill To", margin + 4, y + 6);
+    doc.text("Contact", margin + leftCardWidth + 10, y + 6);
+    doc.setFont("helvetica", "normal");
+    writeMultilineText(doc, [
+      invoice.customer.name || "-",
+      invoice.customer.address || "-",
+      "GSTIN: " + (invoice.customer.gstNumber || invoice.customer.gstin || "-"),
+      "State: " + (invoice.customer.state || "-")
+    ], margin + 4, y + 11, leftCardWidth - 8, 4.5);
+    writeMultilineText(doc, [
+      "Phone: " + (invoice.customer.mobile || invoice.customer.phone || "-"),
+      "Email: " + (invoice.customer.email || "-"),
+      "Place of supply: " + (invoice.customer.state || "-")
+    ], margin + leftCardWidth + 10, y + 11, pageWidth - (margin * 2) - leftCardWidth - 14, 4.5);
+    y += 36;
+
+    y = drawInvoiceTable(doc, invoice, margin, y, pageWidth - (margin * 2), pageHeight - 70);
+    y += 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Totals", pageWidth - margin - 44, y);
+    doc.setFont("helvetica", "normal");
+    writeAmountLine(doc, "Subtotal", invoice.totals.subtotal, pageWidth - margin - 44, pageWidth - margin, y + 6);
+    writeAmountLine(doc, "CGST", invoice.totals.cgst, pageWidth - margin - 44, pageWidth - margin, y + 12);
+    writeAmountLine(doc, "SGST", invoice.totals.sgst, pageWidth - margin - 44, pageWidth - margin, y + 18);
+    writeAmountLine(doc, "IGST", invoice.totals.igst, pageWidth - margin - 44, pageWidth - margin, y + 24);
+    doc.setFont("helvetica", "bold");
+    writeAmountLine(doc, "Grand Total", invoice.totals.grandTotal, pageWidth - margin - 44, pageWidth - margin, y + 32);
+    doc.setFont("helvetica", "normal");
+
+    notesBottom = Math.max(y + 42, y + 8);
+    doc.setFont("helvetica", "bold");
+    doc.text("Notes", margin, notesBottom);
+    doc.setFont("helvetica", "normal");
+    notesBottom = writeMultilineText(doc, [invoice.notes || "-"], margin, notesBottom + 6, pageWidth - (margin * 2), 4.8);
+
+    signatureBaseY = Math.min(pageHeight - 26, Math.max(notesBottom + 8, pageHeight - 42));
+    addBrandImage(doc, invoice.company.signatureDataUrl, pageWidth - margin - 34, signatureBaseY - 14, 30, 12);
+    doc.setDrawColor(200, 220, 235);
+    doc.line(pageWidth - margin - 40, signatureBaseY, pageWidth - margin, signatureBaseY);
+    doc.setFontSize(9);
+    doc.text("Authorised Signatory", pageWidth - margin, signatureBaseY + 5, { align: "right" });
+
+    doc.save(safeFileName(invoice.invoiceNumber || "invoice") + ".pdf");
+    setMessage(app, "PDF downloaded for invoice " + invoice.invoiceNumber + ".", "success");
+  }
+
   function buildInvoiceMarkup(invoice) {
     var customerGstin = invoice.customer.gstNumber || invoice.customer.gstin || "-";
     var customerPhone = invoice.customer.mobile || invoice.customer.phone || "-";
@@ -586,10 +711,133 @@ window.LedgerFlow = window.LedgerFlow || {};
         '<span class="history-row__cell history-row__cell--status">' + statusBadge + "</span>",
         '<span class="history-row__cell history-row__cell--customer">' + utils.escapeHtml(invoice.customer.name) + "</span>",
         '<span class="history-row__cell history-row__cell--total">' + utils.formatCurrency(invoice.totals.grandTotal) + "</span>",
-        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '">View</button>',
+        '<div class="history-row__action-group">',
+        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '" data-invoice-action="view">View</button>',
+        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '" data-invoice-action="pdf">PDF</button>',
+        '</div>',
         "</div>"
       ].join("");
     }).join("");
+  }
+
+  function drawInvoiceTable(doc, invoice, startX, startY, tableWidth, maxY) {
+    var columns = [
+      { label: "Description", width: 74, align: "left" },
+      { label: "Qty", width: 18, align: "right" },
+      { label: "Rate", width: 26, align: "right" },
+      { label: "GST", width: 18, align: "right" },
+      { label: "Total", width: 28, align: "right" }
+    ];
+    var y = startY;
+    var headHeight = 8;
+
+    doc.setFillColor(223, 245, 255);
+    doc.roundedRect(startX, y, tableWidth, headHeight, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    drawTableCells(doc, columns, startX, y + 5.5);
+    y += headHeight;
+    doc.setFont("helvetica", "normal");
+
+    invoice.items.forEach(function (item) {
+      var description = String(item.name || "") + (item.hsn ? "\nHSN/SAC: " + item.hsn : "");
+      var wrappedDescription = doc.splitTextToSize(description, columns[0].width - 4);
+      var rowHeight = Math.max(10, (wrappedDescription.length * 4.5) + 3);
+      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
+
+      if (y + rowHeight > maxY) {
+        doc.addPage();
+        y = 18;
+        doc.setFillColor(223, 245, 255);
+        doc.roundedRect(startX, y, tableWidth, headHeight, 2, 2, "F");
+        doc.setFont("helvetica", "bold");
+        drawTableCells(doc, columns, startX, y + 5.5);
+        y += headHeight;
+        doc.setFont("helvetica", "normal");
+      }
+
+      doc.setDrawColor(234, 245, 251);
+      doc.rect(startX, y, tableWidth, rowHeight);
+      drawWrappedCell(doc, wrappedDescription, startX + 2, y + 5);
+      drawAlignedCell(doc, String(item.quantity), startX + columns[0].width, columns[1].width, y + 5.5, "right");
+      drawAlignedCell(doc, utils.formatCurrency(item.rate), startX + columns[0].width + columns[1].width, columns[2].width, y + 5.5, "right");
+      drawAlignedCell(doc, String(item.gstRate) + "%", startX + columns[0].width + columns[1].width + columns[2].width, columns[3].width, y + 5.5, "right");
+      drawAlignedCell(doc, utils.formatCurrency(lineTotal), startX + columns[0].width + columns[1].width + columns[2].width + columns[3].width, columns[4].width, y + 5.5, "right");
+      y += rowHeight;
+    });
+
+    return y;
+  }
+
+  function drawTableCells(doc, columns, startX, y) {
+    var cursor = startX;
+
+    columns.forEach(function (column) {
+      drawAlignedCell(doc, column.label, cursor, column.width, y, column.align);
+      cursor += column.width;
+    });
+  }
+
+  function drawAlignedCell(doc, text, x, width, y, align) {
+    if (align === "right") {
+      doc.text(String(text), x + width - 2, y, { align: "right" });
+      return;
+    }
+
+    doc.text(String(text), x + 2, y);
+  }
+
+  function drawWrappedCell(doc, lines, x, y) {
+    lines.forEach(function (line, index) {
+      doc.text(String(line), x, y + (index * 4.5));
+    });
+  }
+
+  function writeAmountLine(doc, label, value, startX, endX, y) {
+    doc.text(label, startX, y);
+    doc.text(utils.formatCurrency(value), endX, y, { align: "right" });
+  }
+
+  function writeMultilineText(doc, lines, x, y, width, lineHeight) {
+    var cursorY = y;
+
+    lines.filter(Boolean).forEach(function (line) {
+      var wrapped = doc.splitTextToSize(String(line), width);
+
+      wrapped.forEach(function (part) {
+        doc.text(String(part), x, cursorY);
+        cursorY += lineHeight;
+      });
+    });
+
+    return cursorY;
+  }
+
+  function addBrandImage(doc, dataUrl, x, y, width, height) {
+    var format;
+
+    if (!dataUrl) {
+      return;
+    }
+
+    format = dataUrl.indexOf("image/png") !== -1 ? "PNG" : "JPEG";
+
+    try {
+      doc.addImage(dataUrl, format, x, y, width, height, undefined, "FAST");
+    } catch (error) {
+      // Invalid image data should not block invoice export.
+    }
+  }
+
+  function formatInvoiceStatus(invoice) {
+    if (invoice.invoiceType === "estimate") {
+      return "Estimate";
+    }
+
+    return invoice.paymentStatus === "paid" ? "Paid" : "Unpaid";
+  }
+
+  function safeFileName(value) {
+    return String(value || "invoice").replace(/[\\/:*?"<>|]+/g, "-");
   }
 
   function syncLineItemProductOptions(app) {

@@ -890,6 +890,13 @@ body.sidebar-collapsed .workspace-shell {
   line-height: 1.35;
 }
 
+.history-row__action-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .data-card {
   padding: 16px;
 }
@@ -1221,6 +1228,11 @@ body.sidebar-collapsed .workspace-shell {
 
   .history-row__action {
     width: 100%;
+  }
+
+  .history-row__action-group {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .invoice-totals__grand {

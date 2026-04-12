@@ -890,13 +890,6 @@ body.sidebar-collapsed .workspace-shell {
   line-height: 1.35;
 }
 
-.history-row__action-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 .data-card {
   padding: 16px;
 }
@@ -988,9 +981,16 @@ body.sidebar-collapsed .workspace-shell {
   border-radius: 14px;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+}
+
+.feature-button__icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
 }
 
 .feature-button__label {
@@ -1228,11 +1228,6 @@ body.sidebar-collapsed .workspace-shell {
 
   .history-row__action {
     width: 100%;
-  }
-
-  .history-row__action-group {
-    display: grid;
-    grid-template-columns: 1fr;
   }
 
   .invoice-totals__grand {

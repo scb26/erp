@@ -43,27 +43,60 @@
         </div>
         <div class="feature-list">
           <button class="feature-button is-active" type="button" data-module="dashboard">
-            <span class="feature-button__icon" aria-hidden="true">DB</span>
+            <span class="feature-button__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+              </svg>
+            </span>
             <span class="feature-button__label">Dashboard</span>
             <small>Overview and activity</small>
           </button>
           <button class="feature-button" type="button" data-module="invoices">
-            <span class="feature-button__icon" aria-hidden="true">BL</span>
+            <span class="feature-button__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <path d="M7 3.5h8l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"></path>
+                <path d="M15 3.5V8h4"></path>
+                <path d="M9 12h6"></path>
+                <path d="M9 15.5h6"></path>
+                <path d="M9 19h4"></path>
+              </svg>
+            </span>
             <span class="feature-button__label">Billing</span>
             <small>Quick bills and GST invoices</small>
           </button>
           <button class="feature-button" type="button" data-module="customers">
-            <span class="feature-button__icon" aria-hidden="true">CU</span>
+            <span class="feature-button__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <path d="M15.5 19a4 4 0 0 0-4-4h-1a4 4 0 0 0-4 4"></path>
+                <circle cx="10" cy="9" r="3"></circle>
+                <path d="M18.5 18.5a3.2 3.2 0 0 0-3-3"></path>
+                <path d="M15.5 6.5a2.8 2.8 0 1 1 0 5.6"></path>
+              </svg>
+            </span>
             <span class="feature-button__label">Customers</span>
             <small>Manage buyer records</small>
           </button>
           <button class="feature-button" type="button" data-module="products">
-            <span class="feature-button__icon" aria-hidden="true">PR</span>
+            <span class="feature-button__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <path d="m12 3 8 4.5v9L12 21 4 16.5v-9L12 3Z"></path>
+                <path d="m4 7.5 8 4.5 8-4.5"></path>
+                <path d="M12 12v9"></path>
+              </svg>
+            </span>
             <span class="feature-button__label">Products</span>
             <small>Items, price, GST</small>
           </button>
           <button class="feature-button" type="button" data-module="admin">
-            <span class="feature-button__icon" aria-hidden="true">AD</span>
+            <span class="feature-button__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.6 1.6a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9v.2a1.2 1.2 0 0 1-1.2 1.2h-2.2a1.2 1.2 0 0 1-1.2-1.2v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-1.6-1.6a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6h-.2A1.2 1.2 0 0 1 2.5 13v-2.2a1.2 1.2 0 0 1 1.2-1.2h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l1.6-1.6a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9v-.2A1.2 1.2 0 0 1 10.8 2.5H13a1.2 1.2 0 0 1 1.2 1.2v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l1.6 1.6a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.2 1.2 0 0 1 1.2 1.2V13a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.8Z"></path>
+              </svg>
+            </span>
             <span class="feature-button__label">Admin</span>
             <small>Company and settings</small>
           </button>
@@ -219,7 +252,6 @@
                     <div class="button-row">
                       <button class="button button--primary" type="submit">Save invoice</button>
                       <button id="print-invoice" class="button button--secondary" type="button">Print preview</button>
-                      <button id="download-invoice-pdf" class="button button--secondary" type="button">Download PDF</button>
                     </div>
                   </form>
                 </article>
@@ -521,7 +553,6 @@
   <script src="js/modules/dashboard-module.js"></script>
   <script src="js/modules/customers-module.js"></script>
   <script src="js/modules/products-module.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="js/modules/invoices-module.js"></script>
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>

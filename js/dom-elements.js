@@ -56,7 +56,6 @@ window.LedgerFlow = window.LedgerFlow || {};
       invoicePreview: document.getElementById("invoice-preview"),
       invoiceFormMessage: document.getElementById("invoice-form-message"),
       printButton: document.getElementById("print-invoice"),
-      downloadPdfButton: document.getElementById("download-invoice-pdf"),
       moduleMenu: document.getElementById("module-menu"),
       moduleMenuTitle: document.getElementById("module-menu-title"),
       activeModuleTitle: document.getElementById("active-module-title"),

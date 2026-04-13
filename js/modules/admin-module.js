@@ -43,6 +43,7 @@ window.LedgerFlow = window.LedgerFlow || {};
     var company = app.data.company;
 
     app.elements.companyNameInput.value = company.name || "";
+    app.elements.adminCompanyUpi.value = company.upiId || "";
     app.elements.companyGstinInput.value = company.gstin || "";
     app.elements.companyPanInput.value = company.pan || "";
     app.elements.companyPhoneInput.value = company.phone || "";
@@ -70,6 +71,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   function buildCompanyPayload(app) {
     return {
       name: valueOf("company-name"),
+      upiId: valueOf("admin-company-upi"),
       gstin: upperValueOf("company-gstin"),
       pan: upperValueOf("company-pan"),
       phone: valueOf("company-phone"),

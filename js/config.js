@@ -49,7 +49,8 @@ window.LedgerFlow = window.LedgerFlow || {};
         menuTitle: "Billing Menu",
         menu: [
           { label: "Quick Bill", target: "billing-quick-bill-view", view: "quick-bill" },
-          { label: "Invoice", target: "billing-invoice-view", view: "invoice" }
+          { label: "Invoice", target: "billing-invoice-view", view: "invoice" },
+          { label: "Invoice History", target: "billing-invoice-history-view", view: "history" }
         ]
       },
       customers: {
@@ -67,7 +68,7 @@ window.LedgerFlow = window.LedgerFlow || {};
         menuTitle: "Product Menu",
         menu: [
           { label: "Add Product", target: "product-add" },
-          { label: "Product List", target: "product-list-panel" }
+          { label: "Inventory", target: "product-inventory-panel" }
         ]
       },
       admin: {

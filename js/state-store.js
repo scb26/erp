@@ -19,6 +19,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       email: "accounts@acmetrading.example",
       financialYearStart: "2026-04-01",
       invoicePrefix: "INV-2026-",
+      upiId: "",
       logoDataUrl: "",
       signatureDataUrl: ""
     };

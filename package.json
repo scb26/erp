@@ -1,0 +1,12 @@
+{
+  "name": "unidex-erp",
+  "version": "1.0.0",
+  "description": "Unidex ERP - Counter Billing and GST Invoice System",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "html5-qrcode": "^2.3.8"
+  }
+}

@@ -4,6 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ERP Workspace | Unidex</title>
+  <meta name="description" content="Unidex ERP – Fast counter billing, GST invoices, customer and product management for Indian businesses.">
+  <meta name="theme-color" content="#56beff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Unidex ERP">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" href="pwa/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="pwa/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="pwa/icons/icon-512.png">
   <script>
     (function () {
       var key = "ledgerflow-theme";
@@ -16,8 +30,95 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="pwa/mobile-nav.css">
+
+  <style>
+    /* PWA Install Banner */
+    #pwa-install-banner {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 1px solid rgba(86, 190, 255, 0.3);
+      border-radius: 16px;
+      padding: 14px 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(86,190,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 300px;
+      max-width: 90vw;
+      animation: slideUp 0.4s ease;
+      backdrop-filter: blur(12px);
+    }
+    #pwa-install-banner.hidden { display: none !important; }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    #pwa-install-banner img {
+      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
+    }
+    .pwa-banner__text { flex: 1; }
+    .pwa-banner__text strong {
+      display: block; color: #fff; font-size: 0.95rem; font-weight: 600;
+    }
+    .pwa-banner__text span {
+      color: rgba(255,255,255,0.6); font-size: 0.8rem;
+    }
+    .pwa-banner__actions { display: flex; gap: 8px; flex-shrink: 0; }
+    #pwa-install-btn {
+      background: #56beff; color: #000; border: none;
+      padding: 8px 16px; border-radius: 8px; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s;
+    }
+    #pwa-install-btn:hover { opacity: 0.85; }
+    #pwa-dismiss-btn {
+      background: transparent; color: rgba(255,255,255,0.5); border: none;
+      padding: 8px; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
+      line-height: 1; transition: color 0.2s;
+    }
+    #pwa-dismiss-btn:hover { color: #fff; }
+
+    /* Offline indicator */
+    #offline-toast {
+      display: none;
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      background: #ff6b6b;
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(255,107,107,0.4);
+    }
+    #offline-toast.show { display: block; }
+  </style>
 </head>
 <body>
+  <!-- PWA Install Banner -->
+  <div id="pwa-install-banner" class="hidden" role="complementary" aria-label="Install app">
+    <img src="pwa/icons/icon-192.png" alt="Unidex ERP icon">
+    <div class="pwa-banner__text">
+      <strong>Install Unidex ERP</strong>
+      <span>Add to home screen for quick access</span>
+    </div>
+    <div class="pwa-banner__actions">
+      <button id="pwa-install-btn" type="button">Install</button>
+      <button id="pwa-dismiss-btn" type="button" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- Offline Toast -->
+  <div id="offline-toast" role="status" aria-live="polite">📶 You're offline — using cached data</div>
+
   <div class="site-shell">
     <header class="site-header">
       <div class="site-header__left">
@@ -103,6 +204,67 @@
         </div>
       </aside>
 
+      <!-- Bottom Navigation Bar (Visible only on standard PWA/Mobile via mobile-nav.css) -->
+      <nav class="pwa-bottom-nav" role="navigation" aria-label="Main navigation">
+        <button class="pwa-tab is-active" type="button" data-module="dashboard" id="tab-dashboard">
+          <span class="pwa-tab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+              <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+              <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+            </svg>
+          </span>
+          <span class="pwa-tab__label">Dashboard</span>
+        </button>
+
+        <button class="pwa-tab" type="button" data-module="customers" id="tab-customers">
+          <span class="pwa-tab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M15.5 19a4 4 0 0 0-4-4h-1a4 4 0 0 0-4 4"></path>
+              <circle cx="10" cy="9" r="3"></circle>
+              <path d="M18.5 18.5a3.2 3.2 0 0 0-3-3"></path>
+              <path d="M15.5 6.5a2.8 2.8 0 1 1 0 5.6"></path>
+            </svg>
+          </span>
+          <span class="pwa-tab__label">Customers</span>
+        </button>
+
+        <button class="pwa-tab pwa-tab--scan" type="button" data-module="invoices" id="tab-scan" onclick="setTimeout(function(){ var qb = document.querySelector('[data-billing-view=\'quick-bill\']'); if (qb) qb.click(); var cam = document.getElementById('start-camera-scan'); if (cam && cam.textContent.indexOf('Camera') !== -1) cam.click(); }, 50)">
+          <span class="pwa-tab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+              <line x1="7" y1="12" x2="17" y2="12"></line>
+            </svg>
+          </span>
+          <span class="pwa-tab__label">SCAN</span>
+        </button>
+
+        <button class="pwa-tab" type="button" data-module="products" id="tab-products">
+          <span class="pwa-tab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="m12 3 8 4.5v9L12 21 4 16.5v-9L12 3Z"></path>
+              <path d="m4 7.5 8 4.5 8-4.5"></path>
+              <path d="M12 12v9"></path>
+            </svg>
+          </span>
+          <span class="pwa-tab__label">Products</span>
+        </button>
+
+        <button class="pwa-tab" type="button" data-module="admin" id="tab-admin">
+          <span class="pwa-tab__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.2 1.2 0 0 1 0 1.7l-1.6 1.6a1.2 1.2 0 0 1-1.7 0l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9v.2a1.2 1.2 0 0 1-1.2 1.2h-2.2a1.2 1.2 0 0 1-1.2-1.2v-.2a1 1 0 0 0-.7-.9 1 1 0 0 0-1.1.2l-.1.1a1.2 1.2 0 0 1-1.7 0l-1.6-1.6a1.2 1.2 0 0 1 0-1.7l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6h-.2A1.2 1.2 0 0 1 2.5 13v-2.2a1.2 1.2 0 0 1 1.2-1.2h.2a1 1 0 0 0 .9-.7 1 1 0 0 0-.2-1.1l-.1-.1a1.2 1.2 0 0 1 0-1.7l1.6-1.6a1.2 1.2 0 0 1 1.7 0l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9v-.2A1.2 1.2 0 0 1 10.8 2.5H13a1.2 1.2 0 0 1 1.2 1.2v.2a1 1 0 0 0 .7.9 1 1 0 0 0 1.1-.2l.1-.1a1.2 1.2 0 0 1 1.7 0l1.6 1.6a1.2 1.2 0 0 1 0 1.7l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.2 1.2 0 0 1 1.2 1.2V13a1.2 1.2 0 0 1-1.2 1.2h-.2a1 1 0 0 0-.9.8Z"></path>
+            </svg>
+          </span>
+          <span class="pwa-tab__label">Settings</span>
+        </button>
+      </nav>
+
       <section class="workspace-main">
         <section class="workspace-toolbar panel">
           <div class="toolbar-copy">
@@ -164,7 +326,9 @@
                   <div>
                     <h2>Counter billing</h2>
                   </div>
-                  <button type="button" class="button button--secondary" style="padding: 6px 12px; font-size: 0.85rem;" onclick="document.querySelector('[data-billing-view=\'invoice\']').click()">⚙️ B2B / Add Details &rarr;</button>
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="button button--secondary pos-header-btn" style="padding: 8px 14px; font-size: 0.85rem;" onclick="document.querySelector('[data-billing-view=\'invoice\']').click()">🧾 Full GST Invoice &rarr;</button>
+                  </div>
                 </div>
                 <p class="panel__lead">Focus your cursor in the box below to use a hardware barcode scanner, or click Camera to scan with your phone.</p>
                 <div class="scanner-interface">
@@ -178,13 +342,15 @@
                     <!-- Cart items will be dynamically rendered here -->
                   </div>
                   
-                  <div class="quick-bill-actions" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 10px;">
-                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text);">
-                      Total: <span id="quick-bill-total">₹0.00</span>
+                  <div class="quick-bill-total-bar">
+                    <div class="quick-bill-total-display">
+                      <span class="quick-bill-total-label">Total</span>
+                      <span id="quick-bill-total" class="quick-bill-total-amount">₹0.00</span>
+                      <span id="quick-bill-item-count" class="quick-bill-item-count"></span>
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                      <button type="button" id="save-quick-bill-upi" class="button button--secondary" style="font-weight: bold; border-color: #00baf2; color: #00baf2;">UPI Payment</button>
-                      <button type="button" id="save-quick-bill-cash" class="button button--primary" style="font-weight: bold; background-color: #28a745; border-color: #28a745;">💵 Cash Paid</button>
+                    <div class="quick-bill-pay-buttons">
+                      <button type="button" id="save-quick-bill-upi" class="btn-upi-qr">📱 UPI QR</button>
+                      <button type="button" id="save-quick-bill-cash" class="btn-cash-paid">₹ Cash Paid</button>
                     </div>
                   </div>
                 </div>
@@ -219,8 +385,13 @@
                       <span>Payment status</span>
                       <select id="invoice-status" name="paymentStatus">
                         <option value="unpaid">Unpaid</option>
+                        <option value="partial">Partial</option>
                         <option value="paid">Paid</option>
                       </select>
+                    </label>
+                    <label id="amount-paid-field" class="field-hidden">
+                      <span>Amount Paid ₹</span>
+                      <input id="invoice-amount-paid" name="invoiceAmountPaid" type="number" min="0" step="0.01" placeholder="Enter amount received">
                     </label>
                     <label class="field-span">
                       <span>Customer</span>
@@ -247,6 +418,7 @@
                       <div><span>SGST</span><strong id="sgst-value">Rs 0.00</strong></div>
                       <div><span>IGST</span><strong id="igst-value">Rs 0.00</strong></div>
                       <div class="invoice-totals__grand"><span>Grand total</span><strong id="grand-total-value">Rs 0.00</strong></div>
+                      <div id="invoice-balance-due-cell" class="invoice-totals__balance" hidden><span>Balance Due</span><strong id="balance-due-value">Rs 0.00</strong></div>
                     </div>
                     <p id="invoice-form-message" class="form-message field-span" aria-live="polite"></p>
                     <div class="button-row">
@@ -259,13 +431,15 @@
                 <aside id="invoice-preview-panel" class="panel preview-panel">
                   <div class="panel-head">
                     <div>
-                      <h2>Invoice output</h2>
+                      <h2>Invoice preview</h2>
                     </div>
                   </div>
                   <div id="invoice-preview" class="invoice-preview"></div>
                 </aside>
               </div>
+            </section>
 
+            <section id="billing-invoice-history-view" class="billing-view" data-billing-view="history">
               <article id="invoice-history-panel" class="panel module-card module-card--spaced">
                 <div class="panel-head">
                   <div>
@@ -387,17 +561,22 @@
                     <span>GST %</span>
                     <input id="product-gst" name="productGst" type="number" min="0" step="0.01" required>
                   </label>
+                  <label>
+                    <span>Opening Stock <small>(Optional)</small></span>
+                    <input type="number" id="product-stock" min="0" step="1" placeholder="e.g. 50">
+                  </label>
                   <button class="button button--primary" type="submit">Add product</button>
                 </form>
               </article>
 
-              <article id="product-list-panel" class="panel module-card">
+              <article id="product-inventory-panel" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <h2>Product list</h2>
+                    <h2>Inventory Levels</h2>
+                    <p>Track current stock levels and negative balances</p>
                   </div>
                 </div>
-                <div id="product-list" class="data-list"></div>
+                <div id="product-inventory-list" class="data-list"></div>
               </article>
             </div>
           </section>
@@ -457,6 +636,7 @@
                     <span>State <span class="field-required" aria-hidden="true">*</span></span>
                     <select id="company-state" name="companyState" required></select>
                   </label>
+                  <label><span>UPI ID (for POS Payments)</span><input type="text" id="admin-company-upi" placeholder="merchant@upi" pattern="^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$"></label>
                   <label>
                     <span>Pincode <span class="field-required" aria-hidden="true">*</span></span>
                     <input id="company-pincode" name="companyPincode" type="text" maxlength="6" placeholder="411001" required>
@@ -557,7 +737,121 @@
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" type="text/javascript"></script>
   <script src="erp.js"></script>
+
+  <!-- PWA: Service Worker + Bottom Tab Sync + Install Banner -->
+  <script>
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[PWA] Service worker registered:', reg.scope))
+          .catch(err => console.warn('[PWA] SW registration failed:', err));
+      });
+    }
+
+    // ── Bottom Tab Navigation (Sync with Sidebar) ──
+    const pwaTabButtons = document.querySelectorAll('.pwa-tab[data-module]');
+    const moduleScreens = document.querySelectorAll('.module-screen');
+
+    function switchToModule(moduleName) {
+      // Update tab active state (bottom nav)
+      pwaTabButtons.forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.module === moduleName);
+        btn.setAttribute('aria-selected', btn.dataset.module === moduleName);
+      });
+      // Show correct module screen
+      moduleScreens.forEach(screen => {
+        screen.classList.toggle('is-active', screen.dataset.module === moduleName);
+      });
+      // Update toolbar title
+      const titles = {
+        dashboard: 'Dashboard',
+        invoices: 'Billing',
+        customers: 'Customers',
+        products: 'Products',
+        admin: 'Settings'
+      };
+      const titleEl = document.getElementById('module-menu-title');
+      if (titleEl) titleEl.textContent = (titles[moduleName] || moduleName) + ' Actions';
+    }
+
+    // When clicking bottom tabs
+    pwaTabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mod = btn.dataset.module;
+        switchToModule(mod);
+        // Also trigger the existing ERP sidebar navigation to keep it in sync
+        const existingBtn = document.querySelector(`.feature-button[data-module="${mod}"]`);
+        if (existingBtn && existingBtn !== btn) {
+          // Temporarily disable the sync listener to prevent infinite loop
+          existingBtn.click();
+        }
+      });
+    });
+
+    // When clicking sidebar buttons, sync the bottom nav
+    document.addEventListener('click', (e) => {
+      const featureBtn = e.target.closest('.feature-button[data-module]');
+      if (featureBtn) {
+        const mod = featureBtn.dataset.module;
+        pwaTabButtons.forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.module === mod);
+        });
+      }
+    });
+
+    // Install banner logic
+    let deferredPrompt = null;
+    const banner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('pwa-install-btn');
+    const dismissBtn = document.getElementById('pwa-dismiss-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show banner after 3 seconds
+      setTimeout(() => {
+        if (!localStorage.getItem('pwa-install-dismissed')) {
+          banner.classList.remove('hidden');
+        }
+      }, 3000);
+    });
+
+    installBtn && installBtn.addEventListener('click', () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((result) => {
+        if (result.outcome === 'accepted') console.log('[PWA] User installed the app');
+        deferredPrompt = null;
+        banner.classList.add('hidden');
+      });
+    });
+
+    dismissBtn && dismissBtn.addEventListener('click', () => {
+      banner.classList.add('hidden');
+      localStorage.setItem('pwa-install-dismissed', '1');
+    });
+
+    window.addEventListener('appinstalled', () => {
+      banner.classList.add('hidden');
+      console.log('[PWA] App installed successfully');
+    });
+
+    // Offline/online indicator
+    const offlineToast = document.getElementById('offline-toast');
+    function updateOnlineStatus() {
+      if (!navigator.onLine) {
+        offlineToast.classList.add('show');
+      } else {
+        offlineToast.classList.remove('show');
+      }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+  </script>
 </body>
 </html>
 

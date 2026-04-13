@@ -38,25 +38,46 @@ window.LedgerFlow = window.LedgerFlow || {};
     var saveQuickUpiBtn = document.getElementById("save-quick-bill-upi");
     if (saveQuickUpiBtn) {
       saveQuickUpiBtn.addEventListener("click", function() {
-        submitQuickBill(app, "upi");
+        showUpiModal(app);
       });
     }
 
     var quickCartContainer = document.getElementById("quick-bill-cart-container");
     if (quickCartContainer) {
       quickCartContainer.addEventListener("click", function(event) {
-        if (event.target.classList.contains("remove-quick-cart-item")) {
-          var rowIndex = parseInt(event.target.dataset.index, 10);
-          if (rowIndex >= 0 && rowIndex < app.quickBillCart.length) {
-            app.quickBillCart.splice(rowIndex, 1);
-            renderQuickBillCart(app);
+        var btn = event.target.closest("[data-action]");
+        if (!btn) return;
+        var action = btn.dataset.action;
+        var idx = parseInt(btn.dataset.index, 10);
+        if (isNaN(idx) || idx < 0 || idx >= (app.quickBillCart || []).length) return;
+
+        if (action === "remove") {
+          app.quickBillCart.splice(idx, 1);
+        } else if (action === "inc") {
+          app.quickBillCart[idx].quantity += 1;
+          app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
+        } else if (action === "dec") {
+          if (app.quickBillCart[idx].quantity > 1) {
+            app.quickBillCart[idx].quantity -= 1;
+            app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
+          } else {
+            app.quickBillCart.splice(idx, 1);
           }
+        } else if (action === "show-all") {
+          showAllItemsModal(app);
+          return;
         }
+        renderQuickBillCart(app);
+        syncAllItemsModal(app);
       });
     }
 
     var cameraBtn = document.getElementById("start-camera-scan");
     if (cameraBtn) {
+      // Debounce map: tracks the timestamp of the last scan for each barcode
+      var lastScanMap = {};
+      var SCAN_DEBOUNCE_MS = 5000; // ignore same barcode for 5 seconds
+
       cameraBtn.addEventListener("click", function () {
         var readerEl = document.getElementById("camera-reader");
         var statusEl = document.getElementById("camera-reader-status");
@@ -67,6 +88,7 @@ window.LedgerFlow = window.LedgerFlow || {};
            if (html5QrcodeScanner) {
              html5QrcodeScanner.clear();
            }
+           lastScanMap = {}; // reset debounce on stop
            return;
         }
 
@@ -82,8 +104,36 @@ window.LedgerFlow = window.LedgerFlow || {};
           );
           
           html5QrcodeScanner.render(function (decodedText) {
-             scanProduct(app, decodedText);
-             // html5QrcodeScanner.clear(); // Could stop on detect, but let's allow multi scan
+            var now = Date.now();
+            var lastScan = lastScanMap[decodedText] || 0;
+            if (now - lastScan < SCAN_DEBOUNCE_MS) {
+              return; // Same barcode scanned too recently — ignore
+            }
+            lastScanMap[decodedText] = now;
+            scanProduct(app, decodedText);
+            
+            // Haptic/Audio confirmation
+            if (navigator && navigator.vibrate) navigator.vibrate(200);
+            try {
+              var AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) {
+                var audioCtx = new AudioCtx();
+                var osc = audioCtx.createOscillator();
+                var gainNode = audioCtx.createGain();
+                osc.type = 'square'; // sharp barcode scanner sound
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1); // 100ms beep
+              }
+            } catch (e) { /* ignore audio errors */ }
+            
+            if (statusEl) {
+              statusEl.innerHTML = '<span style="color: var(--accent);">✔ Scanned!</span>';
+              setTimeout(function() { statusEl.innerHTML = ""; }, 1500);
+            }
           }, function (error) {});
         } else {
           if (statusEl) statusEl.textContent = "Scanner library not loaded. Check internet connection.";
@@ -152,7 +202,25 @@ window.LedgerFlow = window.LedgerFlow || {};
       setMessage(app, "", "");
       app.previewInvoice = null;
       syncPreview(app);
+      updatePartialBalanceDue(app);
     });
+
+    // Show / hide the Amount Paid field based on payment status
+    var invoiceStatusSelect = document.getElementById("invoice-status");
+    if (invoiceStatusSelect) {
+      invoiceStatusSelect.addEventListener("change", function () {
+        toggleAmountPaidField(this.value);
+        updatePartialBalanceDue(app);
+      });
+    }
+
+    // Live balance-due recalculation as user types amount paid
+    var amountPaidInput = document.getElementById("invoice-amount-paid");
+    if (amountPaidInput) {
+      amountPaidInput.addEventListener("input", function () {
+        updatePartialBalanceDue(app);
+      });
+    }
 
     app.elements.invoiceForm.addEventListener("submit", function (event) {
       var draft;
@@ -165,6 +233,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       }
 
       app.data.invoices.unshift(draft);
+      deductStock(app, draft.items);
       app.previewInvoice = draft;
       app.persist();
       resetForm(app, { keepPreview: true });
@@ -277,12 +346,12 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     if (!invoice) {
       app.elements.invoicePreview.innerHTML = '<div class="empty-state">Add invoice details to see the preview.</div>';
-      updateTotals(app, liveTotals);
+      updateTotals(app, liveTotals, null);
       return;
     }
 
     app.elements.invoicePreview.innerHTML = buildInvoiceMarkup(invoice);
-    updateTotals(app, invoice.totals);
+    updateTotals(app, invoice.totals, invoice);
   }
 
   function renderQuickBillCart(app) {
@@ -290,39 +359,221 @@ window.LedgerFlow = window.LedgerFlow || {};
     var container = document.getElementById("quick-bill-cart-container");
     if (!container) return;
 
+    // Update total display
+    var totalEl = document.getElementById("quick-bill-total");
+    var countEl = document.getElementById("quick-bill-item-count");
+    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
+
     if (!cart.length) {
-      container.innerHTML = '<div style="padding: 20px; font-size: 0.95rem; color: var(--text-muted); text-align: center; border: 2px dashed var(--border); border-radius: 8px;">Cart is empty — scan a product to begin.</div>';
-      // Also reset total display
-      var totalEl = document.getElementById("quick-bill-total");
+      container.innerHTML = '<div class="pos-cart-empty">Cart is empty — scan a product to begin.</div>';
       if (totalEl) totalEl.textContent = '\u20b90.00';
+      if (countEl) countEl.textContent = '';
       return;
     }
 
-    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
     var totals = calculateTotals(app, defaultCustomer, cart);
-
-    // Update the grand total display
-    var totalEl = document.getElementById("quick-bill-total");
     if (totalEl) totalEl.textContent = utils.formatCurrency(totals.grandTotal);
+    if (countEl) {
+      var totalQty = cart.reduce(function(s, i) { return s + i.quantity; }, 0);
+      countEl.textContent = '(' + totalQty + ' item' + (totalQty !== 1 ? 's' : '') + ')';
+    }
 
-    var header = '<div style="display: flex; align-items: center; padding: 8px 16px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 2px solid var(--border); margin-bottom: 4px;">'
-      + '<div style="flex: 2;">Product</div>'
-      + '<div style="flex: 1; text-align: center;">Qty</div>'
-      + '<div style="flex: 1; text-align: right;">Amount</div>'
-      + '<div style="flex: 0.5;"></div>'
-      + '</div>';
+    var MAX_VISIBLE = 4;
+    var visibleCart = cart.slice(0, MAX_VISIBLE);
 
-    var tableRows = cart.map(function(item, index) {
+    var rows = visibleCart.map(function(item, index) {
       var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
-      return '<div style="display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); border-radius: 6px; margin-bottom: 4px;">'
-        + '<div style="flex: 2; font-weight: 500; color: var(--text);">' + utils.escapeHtml(item.name) + '</div>'
-        + '<div style="flex: 1; text-align: center; color: var(--text);">\u00d7 <strong>' + utils.escapeHtml(String(item.quantity)) + '</strong></div>'
-        + '<div style="flex: 1; text-align: right; font-weight: 600; color: var(--text);">' + utils.formatCurrency(lineTotal) + '</div>'
-        + '<div style="flex: 0.5; text-align: right;"><button type="button" class="remove-quick-cart-item" data-index="' + index + '" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2rem; line-height: 1;" title="Remove Item">\u2715</button></div>'
+      return '<div class="pos-cart-row">'
+        + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
+        + '<div class="pos-cart-row__qty">'
+        + '<button type="button" class="pos-qty-btn" data-action="dec" data-index="' + index + '" aria-label="Decrease">&#8722;</button>'
+        + '<span class="pos-qty-value">' + item.quantity + '</span>'
+        + '<button type="button" class="pos-qty-btn" data-action="inc" data-index="' + index + '" aria-label="Increase">&#43;</button>'
+        + '</div>'
+        + '<div class="pos-cart-row__amount">' + utils.formatCurrency(lineTotal) + '</div>'
+        + '<button type="button" class="pos-remove-btn" data-action="remove" data-index="' + index + '" aria-label="Remove item">&times;</button>'
         + '</div>';
     }).join('');
 
-    container.innerHTML = '<div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">' + header + '<div style="max-height: 300px; overflow-y: auto;">' + tableRows + '</div></div>';
+    var showAllBtn = '';
+    if (cart.length > MAX_VISIBLE) {
+      showAllBtn = '<button type="button" class="pos-show-all-btn" data-action="show-all" data-index="0">'
+        + '&#9776; Show All Items (' + cart.length + ')'
+        + '</button>';
+    }
+
+    container.innerHTML = '<div class="pos-cart-table">'
+      + '<div class="pos-cart-header">'
+      + '<span>Product</span><span style="text-align:center">Qty</span><span style="text-align:right">Amount</span><span></span>'
+      + '</div>'
+      + rows
+      + '</div>'
+      + showAllBtn;
+  }
+
+  function showAllItemsModal(app) {
+    var existing = document.getElementById("pos-all-items-modal");
+    if (existing) existing.remove();
+
+    var modal = document.createElement("div");
+    modal.id = "pos-all-items-modal";
+    modal.className = "pos-modal-overlay";
+    modal.innerHTML = '<div class="pos-modal-sheet">'
+      + '<div class="pos-modal-header">'
+      + '<span class="pos-modal-title">All Cart Items</span>'
+      + '<button type="button" class="pos-modal-close" id="pos-all-items-close">&times;</button>'
+      + '</div>'
+      + '<div id="pos-all-items-list" class="pos-all-items-list"></div>'
+      + '</div>';
+    document.body.appendChild(modal);
+    requestAnimationFrame(function() { modal.classList.add("is-open"); });
+    modal.querySelector("#pos-all-items-close").addEventListener("click", function() { closeModal(modal); });
+    modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(modal); });
+    renderAllItemsList(app);
+  }
+
+  function closeModal(modal) {
+    modal.classList.remove("is-open");
+    setTimeout(function() { if (modal.parentNode) modal.parentNode.removeChild(modal); }, 280);
+  }
+
+  function renderAllItemsList(app) {
+    var listEl = document.getElementById("pos-all-items-list");
+    if (!listEl) return;
+    var cart = app.quickBillCart || [];
+    if (!cart.length) { listEl.innerHTML = '<div class="pos-cart-empty">Cart is empty.</div>'; return; }
+    listEl.innerHTML = cart.map(function(item, index) {
+      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
+      return '<div class="pos-cart-row">'
+        + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
+        + '<div class="pos-cart-row__qty">'
+        + '<button type="button" class="pos-qty-btn modal-qty-btn" data-action="modal-dec" data-index="' + index + '">&#8722;</button>'
+        + '<span class="pos-qty-value">' + item.quantity + '</span>'
+        + '<button type="button" class="pos-qty-btn modal-qty-btn" data-action="modal-inc" data-index="' + index + '">&#43;</button>'
+        + '</div>'
+        + '<div class="pos-cart-row__amount">' + utils.formatCurrency(lineTotal) + '</div>'
+        + '<button type="button" class="pos-remove-btn modal-remove-btn" data-action="modal-remove" data-index="' + index + '">&times;</button>'
+        + '</div>';
+    }).join('');
+    listEl.addEventListener("click", function(e) {
+      var btn = e.target.closest("[data-action]");
+      if (!btn) return;
+      var action = btn.dataset.action;
+      var idx = parseInt(btn.dataset.index, 10);
+      if (isNaN(idx) || idx < 0 || idx >= cart.length) return;
+      if (action === "modal-remove") {
+        cart.splice(idx, 1);
+      } else if (action === "modal-inc") {
+        cart[idx].quantity += 1;
+        cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
+      } else if (action === "modal-dec") {
+        if (cart[idx].quantity > 1) {
+          cart[idx].quantity -= 1;
+          cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
+        } else {
+          cart.splice(idx, 1);
+        }
+      }
+      renderAllItemsList(app);
+      renderQuickBillCart(app);
+    }, { once: false });
+  }
+
+  function syncAllItemsModal(app) {
+    var modal = document.getElementById("pos-all-items-modal");
+    if (!modal) return;
+    renderAllItemsList(app);
+  }
+
+  function showUpiModal(app) {
+    var cart = app.quickBillCart || [];
+    if (!cart.length) {
+      var statusEl = document.getElementById("camera-reader-status");
+      if (statusEl) {
+        statusEl.innerHTML = '<span style="color: var(--danger);">Please scan at least one item before charging.</span>';
+        setTimeout(function() { statusEl.innerHTML = ""; }, 3000);
+      }
+      return;
+    }
+    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
+    var totals = calculateTotals(app, defaultCustomer, cart);
+    var totalStr = utils.formatCurrency(totals.grandTotal);
+
+    var existing = document.getElementById("pos-upi-modal");
+    if (existing) existing.remove();
+
+    var upiId = app.data.company && app.data.company.upiId ? app.data.company.upiId : null;
+    var merchantName = app.data.company && app.data.company.name ? encodeURIComponent(app.data.company.name) : "Unidex";
+    var upiUri = '';
+    var qrContent = '';
+    
+    if (upiId) {
+      upiUri = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + merchantName + '&am=' + totals.grandTotal + '&cu=INR';
+      qrContent = '<canvas id="pos-upi-qr-canvas"></canvas>';
+    } else {
+      qrContent = '<div class="pos-upi-qr-placeholder">'
+        + '<svg viewBox="0 0 80 80" fill="none" width="80" height="80"><rect x="4" y="4" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="12" y="12" width="12" height="12" rx="1" fill="currentColor"/><rect x="48" y="4" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="56" y="12" width="12" height="12" rx="1" fill="currentColor"/><rect x="4" y="48" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="12" y="56" width="12" height="12" rx="1" fill="currentColor"/><rect x="48" y="48" width="8" height="8" rx="1" fill="currentColor"/><rect x="62" y="48" width="14" height="8" rx="1" fill="currentColor"/><rect x="48" y="62" width="14" height="8" rx="1" fill="currentColor"/><rect x="68" y="62" width="8" height="14" rx="1" fill="currentColor"/></svg>'
+        + '<p>Configure UPI ID in Settings</p>'
+        + '</div>';
+    }
+
+    var modal = document.createElement("div");
+    modal.id = "pos-upi-modal";
+    modal.className = "pos-modal-overlay";
+    modal.innerHTML = '<div class="pos-modal-sheet pos-upi-sheet">'
+      + '<div class="pos-modal-header">'
+      + '<span class="pos-modal-title">UPI QR Payment</span>'
+      + '<button type="button" class="pos-modal-close" id="pos-upi-close">&times;</button>'
+      + '</div>'
+      + '<div class="pos-upi-amount">' + totalStr + '</div>'
+      + '<div class="pos-upi-qr-area">'
+      + qrContent
+      + '</div>'
+      + '<p class="pos-upi-hint">Ask customer to scan this QR with any UPI app</p>'
+      + '<button type="button" class="btn-received-payment" id="pos-upi-received">&#10003; I Received Payment</button>'
+      + '</div>';
+    document.body.appendChild(modal);
+    requestAnimationFrame(function() { modal.classList.add("is-open"); });
+
+    if (upiId && typeof window.QRious !== 'undefined') {
+      new QRious({
+        element: document.getElementById('pos-upi-qr-canvas'),
+        value: upiUri,
+        size: 200
+      });
+    }
+
+    modal.querySelector("#pos-upi-close").addEventListener("click", function() { closeModal(modal); });
+    modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(modal); });
+    modal.querySelector("#pos-upi-received").addEventListener("click", function() {
+      closeModal(modal);
+      submitQuickBill(app, "upi");
+    });
+  }
+
+  function showSuccessOverlay(amount, paymentMethod, onDone) {
+    var existing = document.getElementById("pos-success-overlay");
+    if (existing) existing.remove();
+
+    var label = paymentMethod === "upi" ? "UPI" : "Cash";
+    var overlay = document.createElement("div");
+    overlay.id = "pos-success-overlay";
+    overlay.className = "pos-success-overlay";
+    overlay.innerHTML = '<div class="pos-success-content">'
+      + '<div class="pos-success-check">&#10003;</div>'
+      + '<div class="pos-success-amount">' + amount + '</div>'
+      + '<div class="pos-success-msg">Received Successfully</div>'
+      + '<div class="pos-success-method">' + label + '</div>'
+      + '</div>';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function() { overlay.classList.add("is-visible"); });
+    setTimeout(function() {
+      overlay.classList.remove("is-visible");
+      setTimeout(function() {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (typeof onDone === "function") onDone();
+      }, 320);
+    }, 1800);
   }
 
   function submitQuickBill(app, paymentMethod) {
@@ -345,6 +596,9 @@ window.LedgerFlow = window.LedgerFlow || {};
       gstNumber: ""
     };
 
+    var totals = calculateTotals(app, defaultCustomer, cart);
+    var amountStr = utils.formatCurrency(totals.grandTotal);
+
     var draft = {
       id: utils.createId("INV"),
       invoiceType: "tax_invoice",
@@ -355,22 +609,18 @@ window.LedgerFlow = window.LedgerFlow || {};
       customer: defaultCustomer,
       notes: paymentMethod === 'upi' ? "Automated POS Checkout: Paid via UPI" : "Automated POS Checkout: Cash Paid",
       items: cart,
-      totals: calculateTotals(app, defaultCustomer, cart)
+      totals: totals
     };
 
     app.data.invoices.unshift(draft);
+    deductStock(app, draft.items);
     app.persist();
 
-    // Flash success and wipe the POS cart
-    var successEl = document.getElementById("camera-reader-status");
-    if (successEl) {
-      successEl.innerHTML = '<span style="color: var(--success);">\u2705 Checkout done: Invoice ' + draft.invoiceNumber + ' saved as Paid.</span>';
-      setTimeout(function() { successEl.innerHTML = ""; }, 3000);
-    }
-
-    app.quickBillCart = [];
-    renderQuickBillCart(app);
-    app.renderAll();
+    showSuccessOverlay(amountStr, paymentMethod, function() {
+      app.quickBillCart = [];
+      renderQuickBillCart(app);
+      app.renderAll();
+    });
   }
 
   function collectInvoiceDraft(app, strict) {
@@ -380,6 +630,7 @@ window.LedgerFlow = window.LedgerFlow || {};
     var invoiceDate = valueOf("invoice-date");
     var invoiceType = valueOf("invoice-type") || "tax_invoice";
     var paymentStatus = valueOf("invoice-status") || "unpaid";
+    var amountPaidRaw = parseFloat(document.getElementById("invoice-amount-paid").value) || 0;
 
     if (!customer || !items.length || !invoiceNumber || !invoiceDate) {
       if (strict) {
@@ -388,17 +639,38 @@ window.LedgerFlow = window.LedgerFlow || {};
       return null;
     }
 
+    var totals = calculateTotals(app, customer, items);
+
+    // Partial payment validation
+    if (paymentStatus === "partial") {
+      if (strict && amountPaidRaw <= 0) {
+        setMessage(app, "Enter a valid amount paid (must be greater than zero).", "error");
+        return null;
+      }
+      if (strict && amountPaidRaw >= totals.grandTotal) {
+        setMessage(app, "Amount paid equals or exceeds the total — mark as Paid instead.", "error");
+        return null;
+      }
+    }
+
+    var amountPaid = paymentStatus === "paid" ? totals.grandTotal
+      : paymentStatus === "partial" ? utils.round(amountPaidRaw)
+      : 0;
+    var balanceDue = utils.round(totals.grandTotal - amountPaid);
+
     return {
       id: utils.createId("INV"),
       invoiceType: invoiceType,
       paymentStatus: paymentStatus,
+      amountPaid: amountPaid,
+      balanceDue: balanceDue,
       invoiceNumber: invoiceNumber,
       invoiceDate: invoiceDate,
       company: utils.clone(app.data.company),
       customer: utils.clone(customer),
       notes: valueOf("invoice-notes"),
       items: items,
-      totals: calculateTotals(app, customer, items)
+      totals: totals
     };
   }
 
@@ -454,12 +726,33 @@ window.LedgerFlow = window.LedgerFlow || {};
     };
   }
 
-  function updateTotals(app, totals) {
+  function updateTotals(app, totals, invoice) {
     app.elements.subtotalValue.textContent = utils.formatCurrency(totals.subtotal);
     app.elements.cgstValue.textContent = utils.formatCurrency(totals.cgst);
     app.elements.sgstValue.textContent = utils.formatCurrency(totals.sgst);
     app.elements.igstValue.textContent = utils.formatCurrency(totals.igst);
     app.elements.grandTotalValue.textContent = utils.formatCurrency(totals.grandTotal);
+
+    // Show balance-due cell only for partial invoices in preview
+    var balanceCell = document.getElementById("invoice-balance-due-cell");
+    var balanceValue = document.getElementById("balance-due-value");
+    if (balanceCell && balanceValue) {
+      var isPartial = invoice && invoice.paymentStatus === "partial";
+      balanceCell.hidden = !isPartial;
+      if (isPartial && invoice.balanceDue !== undefined) {
+        balanceValue.textContent = utils.formatCurrency(invoice.balanceDue);
+      }
+    }
+  }
+
+  function deductStock(app, items) {
+    if (!items || !items.length) return;
+    items.forEach(function(item) {
+      var product = app.data.products.find(function(p) { return p.id === item.productId; });
+      if (product) {
+        product.stock = (product.stock || 0) - item.quantity;
+      }
+    });
   }
 
   function resetForm(app, options) {
@@ -468,6 +761,10 @@ window.LedgerFlow = window.LedgerFlow || {};
     app.elements.invoiceForm.reset();
     document.getElementById("invoice-type").value = "tax_invoice";
     document.getElementById("invoice-status").value = "unpaid";
+    toggleAmountPaidField("unpaid");
+    document.getElementById("invoice-amount-paid").value = "";
+    var balanceCell = document.getElementById("invoice-balance-due-cell");
+    if (balanceCell) balanceCell.hidden = true;
     app.elements.invoiceCustomerSelect.value = "";
     app.elements.invoiceCustomerNameInput.value = "";
     hideCustomerSuggestions(app);
@@ -529,7 +826,11 @@ window.LedgerFlow = window.LedgerFlow || {};
       '<div class="invoice-sheet__head">',
       '<div><h3>' + utils.escapeHtml(invoice.company.name) + '</h3><p>' + utils.escapeHtml(invoice.company.address) + '</p><p>GSTIN: ' + utils.escapeHtml(invoice.company.gstin || "-") + '</p></div>',
       '<div style="position:relative;">',
-      (invoice.paymentStatus === 'paid' && invoice.invoiceType !== 'estimate' ? '<div style="position:absolute; top:0; right:0; color:#28a745; border:3px solid #28a745; padding:4px 12px; font-weight:bold; font-size:1.5rem; text-transform:uppercase; transform:rotate(-5deg); opacity:0.8; border-radius:6px; letter-spacing:2px;">PAID</div>' : ''),
+      (invoice.paymentStatus === 'paid' && invoice.invoiceType !== 'estimate'
+        ? '<div style="position:absolute; top:0; right:0; color:#28a745; border:3px solid #28a745; padding:4px 12px; font-weight:bold; font-size:1.5rem; text-transform:uppercase; transform:rotate(-5deg); opacity:0.8; border-radius:6px; letter-spacing:2px;">PAID</div>'
+        : invoice.paymentStatus === 'partial' && invoice.invoiceType !== 'estimate'
+          ? '<div style="position:absolute; top:0; right:0; color:#f59e0b; border:3px solid #f59e0b; padding:4px 12px; font-weight:bold; font-size:1.5rem; text-transform:uppercase; transform:rotate(-5deg); opacity:0.8; border-radius:6px; letter-spacing:2px;">PARTIAL</div>'
+          : ''),
       '<h3>' + (invoice.invoiceType === "estimate" ? "Estimate" : "Tax Invoice") + '</h3><p>Invoice No: ' + utils.escapeHtml(invoice.invoiceNumber) + '</p><p>Date: ' + utils.escapeHtml(invoice.invoiceDate) + '</p><p>State: ' + utils.escapeHtml(invoice.company.state) + '</p></div>',
       '</div>',
       '<div class="invoice-sheet__meta">',
@@ -546,6 +847,10 @@ window.LedgerFlow = window.LedgerFlow || {};
       '<p>SGST: <strong>' + utils.formatCurrency(invoice.totals.sgst) + '</strong></p>',
       '<p>IGST: <strong>' + utils.formatCurrency(invoice.totals.igst) + '</strong></p>',
       '<p>Grand Total: <strong>' + utils.formatCurrency(invoice.totals.grandTotal) + '</strong></p>',
+      (invoice.paymentStatus === 'partial'
+        ? '<p>Amount Paid: <strong style="color:#16a34a;">' + utils.formatCurrency(invoice.amountPaid || 0) + '</strong></p>'
+          + '<p>Balance Due: <strong style="color:#f59e0b; font-size:1.05em;">' + utils.formatCurrency(invoice.balanceDue || 0) + '</strong></p>'
+        : ''),
       '</div>',
       '<p style="margin-top:16px;">Notes: ' + utils.escapeHtml(invoice.notes || "-") + '</p>',
       '</section>'
@@ -575,8 +880,15 @@ window.LedgerFlow = window.LedgerFlow || {};
         statusBadge = '<span class="status-badge status-badge--estimate">🟡 Estimate</span>';
       } else if (invoice.paymentStatus === 'paid') {
         statusBadge = '<span class="status-badge status-badge--paid">🟢 Paid</span>';
+      } else if (invoice.paymentStatus === 'partial') {
+        statusBadge = '<span class="status-badge status-badge--partial">🟠 Partial</span>';
       } else {
         statusBadge = '<span class="status-badge status-badge--unpaid">🔴 Unpaid</span>';
+      }
+
+      var totalDisplay = utils.formatCurrency(invoice.totals.grandTotal);
+      if (invoice.paymentStatus === 'partial' && invoice.balanceDue) {
+        totalDisplay += '<br><small style="color:#f59e0b;font-size:0.8rem;">due ' + utils.formatCurrency(invoice.balanceDue) + '</small>';
       }
 
       return [
@@ -585,7 +897,7 @@ window.LedgerFlow = window.LedgerFlow || {};
         '<span class="history-row__cell history-row__cell--date">' + utils.escapeHtml(invoice.invoiceDate) + "</span>",
         '<span class="history-row__cell history-row__cell--status">' + statusBadge + "</span>",
         '<span class="history-row__cell history-row__cell--customer">' + utils.escapeHtml(invoice.customer.name) + "</span>",
-        '<span class="history-row__cell history-row__cell--total">' + utils.formatCurrency(invoice.totals.grandTotal) + "</span>",
+        '<span class="history-row__cell history-row__cell--total">' + totalDisplay + "</span>",
         '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '">View</button>',
         "</div>"
       ].join("");
@@ -804,7 +1116,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function setActiveBillingView(app, viewKey) {
-    app.activeBillingView = viewKey === "invoice" ? "invoice" : "quick-bill";
+    app.activeBillingView = (viewKey === "invoice" || viewKey === "history") ? viewKey : "quick-bill";
     applyBillingView(app);
     if (ns.navigation && typeof ns.navigation.renderModuleMenu === "function") {
       ns.navigation.renderModuleMenu(app);
@@ -828,6 +1140,44 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   function valueOf(id) {
     return document.getElementById(id).value.trim();
+  }
+
+  function toggleAmountPaidField(status) {
+    var field = document.getElementById("amount-paid-field");
+    if (!field) return;
+    if (status === "partial") {
+      field.classList.remove("field-hidden");
+    } else {
+      field.classList.add("field-hidden");
+    }
+  }
+
+  function updatePartialBalanceDue(app) {
+    var statusEl = document.getElementById("invoice-status");
+    var amountPaidEl = document.getElementById("invoice-amount-paid");
+    var balanceCell = document.getElementById("invoice-balance-due-cell");
+    var balanceValue = document.getElementById("balance-due-value");
+    if (!statusEl || !balanceCell || !balanceValue) return;
+
+    var status = statusEl.value;
+    if (status !== "partial") {
+      balanceCell.hidden = true;
+      return;
+    }
+
+    // Compute live balance from current line items
+    var items = collectLineItems(app);
+    var customer = resolveCustomer(app) || {};
+    if (!items.length) {
+      balanceCell.hidden = true;
+      return;
+    }
+    var totals = calculateTotals(app, customer, items);
+    var amountPaid = parseFloat(amountPaidEl ? amountPaidEl.value : 0) || 0;
+    var balanceDue = utils.round(totals.grandTotal - amountPaid);
+
+    balanceCell.hidden = false;
+    balanceValue.textContent = utils.formatCurrency(balanceDue > 0 ? balanceDue : 0);
   }
 
   function setMessage(app, message, type) {

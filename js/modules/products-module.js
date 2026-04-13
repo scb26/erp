@@ -16,7 +16,8 @@ window.LedgerFlow = window.LedgerFlow || {};
         name: valueOf("product-name"),
         hsn: valueOf("product-hsn"),
         price: numberOf("product-price"),
-        gstRate: numberOf("product-gst")
+        gstRate: numberOf("product-gst"),
+        stock: numberOf("product-stock")
       });
 
       app.elements.productForm.reset();
@@ -26,21 +27,33 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function render(app) {
+    var invList = document.getElementById("product-inventory-list");
+
     if (!app.data.products.length) {
-      app.elements.productList.innerHTML = '<div class="empty-state">No products yet.</div>';
+      if (invList) invList.innerHTML = '<div class="empty-state">No inventory yet.</div>';
       return;
     }
 
-    app.elements.productList.innerHTML = app.data.products.map(function (product) {
-      return [
-        '<article class="data-card">',
-        "<h3>" + utils.escapeHtml(product.name) + "</h3>",
-        "<p>Barcode: " + utils.escapeHtml(product.barcode || "-") + "</p>",
-        "<p>HSN/SAC: " + utils.escapeHtml(product.hsn || "-") + " | GST: " + utils.escapeHtml(String(product.gstRate)) + "%</p>",
-        "<p>Price: " + utils.formatCurrency(product.price) + "</p>",
-        "</article>"
-      ].join("");
-    }).join("");
+    if (invList) {
+      invList.innerHTML = app.data.products.map(function (product) {
+        var stockVal = product.stock || 0;
+        var stockColor = stockVal < 0 ? "var(--danger)" : "var(--accent)";
+        return [
+          '<article class="data-card" style="display:flex; justify-content:space-between; align-items:center;">',
+          '<div>',
+          '<h3>' + utils.escapeHtml(product.name) + '</h3>',
+          '<p>Barcode: ' + utils.escapeHtml(product.barcode || "-") + '</p>',
+          '<p>HSN: ' + utils.escapeHtml(product.hsn || "-") + ' | GST: ' + utils.escapeHtml(String(product.gstRate)) + '%</p>',
+          '<p><strong>Price: ' + utils.formatCurrency(product.price) + '</strong></p>',
+          '</div>',
+          '<div style="text-align:right;">',
+          '<h2 style="color: ' + stockColor + '; margin:0;">' + stockVal + '</h2>',
+          '<p style="margin:0;"><small>Units remaining</small></p>',
+          '</div>',
+          '</article>'
+        ].join("");
+      }).join("");
+    }
   }
 
   function valueOf(id) {

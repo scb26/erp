@@ -1,4 +1,4 @@
-const CACHE_NAME = 'unidex-erp-v2';
+const CACHE_NAME = 'unidex-erp-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -13,9 +13,8 @@ const ASSETS = [
   './js/dom-elements.js',
   './js/navigation.js',
   './js/modules/dashboard-module.js',
-  './js/modules/customers-module.js',
   './js/modules/products-module.js',
-  './js/modules/invoices-module.js',
+  './js/modules/sales-module.js',
   './js/modules/admin-module.js',
   './js/modules/module-registry.js',
   './manifest.json',

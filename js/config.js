@@ -43,21 +43,14 @@ window.LedgerFlow = window.LedgerFlow || {};
           { label: "Overview", target: "dashboard-overview" }
         ]
       },
-      invoices: {
-        title: "Billing",
-        description: "Run quick bills and full GST invoices from one billing workspace.",
-        menuTitle: "Billing Menu",
+      sales: {
+        title: "Sales",
+        description: "Run quick bills, GST invoices, and manage your customer database in one place.",
+        menuTitle: "Sales Menu",
         menu: [
           { label: "Quick Bill", target: "billing-quick-bill-view", view: "quick-bill" },
           { label: "Invoice", target: "billing-invoice-view", view: "invoice" },
-          { label: "Invoice History", target: "billing-invoice-history-view", view: "history" }
-        ]
-      },
-      customers: {
-        title: "Customers",
-        description: "Add and maintain customer records so invoices use the correct GST and place-of-supply details.",
-        menuTitle: "Customer Menu",
-        menu: [
+          { label: "Invoice History", target: "billing-invoice-history-view", view: "history" },
           { label: "Add Customer", target: "customer-add" },
           { label: "Customer List", target: "customer-list-panel" }
         ]

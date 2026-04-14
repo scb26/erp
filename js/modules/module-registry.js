@@ -5,10 +5,9 @@ window.LedgerFlow = window.LedgerFlow || {};
   function list() {
     return [
       ns.modules.admin,
-      ns.modules.customers,
       ns.modules.products,
       ns.modules.dashboard,
-      ns.modules.invoices
+      ns.modules.sales
     ].filter(Boolean);
   }
 

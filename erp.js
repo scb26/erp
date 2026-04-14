@@ -22,7 +22,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       data: stateStore.hydrate(),
       previewInvoice: null,
       activeModule: "dashboard",
-      activeBillingView: "quick-bill",
+      activeBillingView: "invoice",
       isSidebarCollapsed: window.localStorage.getItem(config.STORAGE_KEYS.sidebar) === "true"
     };
 
@@ -39,8 +39,8 @@ window.LedgerFlow = window.LedgerFlow || {};
     };
 
     app.setActiveBillingView = function (viewKey) {
-      if (ns.modules.invoices && typeof ns.modules.invoices.setActiveBillingView === "function") {
-        ns.modules.invoices.setActiveBillingView(app, viewKey);
+      if (ns.modules.sales && typeof ns.modules.sales.setActiveBillingView === "function") {
+        ns.modules.sales.setActiveBillingView(app, viewKey);
       }
     };
 

@@ -40,6 +40,12 @@ window.LedgerFlow = window.LedgerFlow || {};
       screen.classList.toggle("is-active", screen.dataset.module === app.activeModule);
     });
 
+    // Reset toolbar visibility when switching modules
+    var toolbar = document.querySelector(".workspace-toolbar");
+    if (toolbar) {
+      toolbar.style.display = "grid"; 
+    }
+
     if (app.elements.activeModuleTitle) {
       app.elements.activeModuleTitle.textContent = config.MODULES[app.activeModule].title;
     }
@@ -57,7 +63,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   function renderModuleMenu(app) {
     app.elements.moduleMenu.innerHTML = config.MODULES[app.activeModule].menu.map(function (item) {
-      var isActiveBillingView = app.activeModule === "invoices" && item.view && item.view === app.activeBillingView;
+      var isActiveBillingView = app.activeModule === "sales" && item.view && item.view === app.activeBillingView;
       var activeClass = isActiveBillingView ? " is-active" : "";
       var billingViewAttribute = item.view ? ' data-billing-view="' + item.view + '"' : "";
 

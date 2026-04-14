@@ -643,6 +643,13 @@ body.sidebar-collapsed .workspace-shell {
   display: none;
 }
 
+.customer-suggestion:hover,
+.customer-suggestion.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
 .customer-suggestion {
   width: 100%;
   display: grid;

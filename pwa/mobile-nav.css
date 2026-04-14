@@ -195,6 +195,12 @@
     margin-bottom: 14px;
   }
 
+  /* Hide Quick Bill from the top menu, rely on bottom SCAN button */
+  .module-menu__button[data-billing-view="quick-bill"],
+  .module-menu__button[data-target-id="billing-quick-bill-view"] {
+    display: none !important;
+  }
+
   .content-grid--two,
   .content-grid--invoice,
   .app-form,

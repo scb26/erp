@@ -155,7 +155,7 @@
             <span class="feature-button__label">Dashboard</span>
             <small>Overview and activity</small>
           </button>
-          <button class="feature-button" type="button" data-module="invoices">
+          <button class="feature-button" type="button" data-module="sales">
             <span class="feature-button__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" focusable="false">
                 <path d="M7 3.5h8l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"></path>
@@ -165,20 +165,8 @@
                 <path d="M9 19h4"></path>
               </svg>
             </span>
-            <span class="feature-button__label">Billing</span>
-            <small>Quick bills and GST invoices</small>
-          </button>
-          <button class="feature-button" type="button" data-module="customers">
-            <span class="feature-button__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                <path d="M15.5 19a4 4 0 0 0-4-4h-1a4 4 0 0 0-4 4"></path>
-                <circle cx="10" cy="9" r="3"></circle>
-                <path d="M18.5 18.5a3.2 3.2 0 0 0-3-3"></path>
-                <path d="M15.5 6.5a2.8 2.8 0 1 1 0 5.6"></path>
-              </svg>
-            </span>
-            <span class="feature-button__label">Customers</span>
-            <small>Manage buyer records</small>
+            <span class="feature-button__label">Sales</span>
+            <small>Quick bills, GST & Customers</small>
           </button>
           <button class="feature-button" type="button" data-module="products">
             <span class="feature-button__icon" aria-hidden="true">
@@ -218,19 +206,18 @@
           <span class="pwa-tab__label">Dashboard</span>
         </button>
 
-        <button class="pwa-tab" type="button" data-module="customers" id="tab-customers">
+        <button class="pwa-tab" type="button" data-module="sales" id="tab-billing">
           <span class="pwa-tab__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
-              <path d="M15.5 19a4 4 0 0 0-4-4h-1a4 4 0 0 0-4 4"></path>
-              <circle cx="10" cy="9" r="3"></circle>
-              <path d="M18.5 18.5a3.2 3.2 0 0 0-3-3"></path>
-              <path d="M15.5 6.5a2.8 2.8 0 1 1 0 5.6"></path>
+              <path d="M7 3.5h8l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"></path>
+              <path d="M15 3.5V8h4"></path>
+              <path d="M9 12h6"></path>
             </svg>
           </span>
-          <span class="pwa-tab__label">Customers</span>
+          <span class="pwa-tab__label">Sales</span>
         </button>
 
-        <button class="pwa-tab pwa-tab--scan" type="button" data-module="invoices" id="tab-scan" onclick="setTimeout(function(){ var qb = document.querySelector('[data-billing-view=\'quick-bill\']'); if (qb) qb.click(); var cam = document.getElementById('start-camera-scan'); if (cam && cam.textContent.indexOf('Camera') !== -1) cam.click(); }, 50)">
+        <button class="pwa-tab pwa-tab--scan" type="button" data-module="sales" id="tab-scan" onclick="setTimeout(function(){ var qb = document.querySelector('button[data-billing-view=\'quick-bill\']'); if (qb) qb.click(); var cam = document.getElementById('start-camera-scan'); if (cam && cam.textContent.indexOf('Camera') !== -1) cam.click(); }, 50)">
           <span class="pwa-tab__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
@@ -319,22 +306,21 @@
             </article>
           </section>
 
-          <section class="module-screen" data-module="invoices">
-            <section id="billing-quick-bill-view" class="billing-view is-active" data-billing-view="quick-bill">
+          <section class="module-screen" data-module="sales">
+            <section id="billing-quick-bill-view" class="billing-view" data-billing-view="quick-bill">
               <article id="billing-quick-bill" class="panel module-card module-card--spaced">
-                <div class="panel-head" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="panel-head">
                   <div>
                     <h2>Counter billing</h2>
                   </div>
-                  <div style="display: flex; gap: 8px; align-items: center;">
-                    <button type="button" class="button button--secondary pos-header-btn" style="padding: 8px 14px; font-size: 0.85rem;" onclick="document.querySelector('[data-billing-view=\'invoice\']').click()">🧾 Full GST Invoice &rarr;</button>
-                  </div>
                 </div>
-                <p class="panel__lead">Focus your cursor in the box below to use a hardware barcode scanner, or click Camera to scan with your phone.</p>
                 <div class="scanner-interface">
-                  <div class="scanner-controls" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="quick-barcode-input" placeholder="Scan barcode or type and press Enter..." style="flex: 1; padding: 12px; font-size: 1.1rem; border: 2px solid var(--border); border-radius: 8px;">
-                    <button type="button" id="start-camera-scan" class="button button--primary">📷 Camera</button>
+                  <div class="scanner-controls" style="display: flex; flex-direction: column; gap: 4px; position: relative;">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                      <input type="text" id="quick-barcode-input" placeholder="Scan barcode or type and press Enter..." style="flex: 1; padding: 12px; font-size: 1.1rem; border: 2px solid var(--border); border-radius: 8px;" autocomplete="off">
+                      <button type="button" id="start-camera-scan" class="button button--primary">📷 Camera</button>
+                    </div>
+                    <div id="quick-barcode-suggestions" class="customer-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 50; margin-top: -8px;" hidden></div>
                   </div>
                   <div id="camera-reader-status" style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);"></div>
                   <div id="camera-reader" style="width: 100%; max-width: 500px; display: none; margin: 0 auto 20px auto;"></div>
@@ -357,7 +343,7 @@
               </article>
             </section>
 
-            <section id="billing-invoice-view" class="billing-view" data-billing-view="invoice">
+            <section id="billing-invoice-view" class="billing-view is-active" data-billing-view="invoice">
               <div class="content-grid content-grid--invoice">
                 <article id="invoice-create" class="panel module-card">
                   <div class="panel-head">
@@ -449,10 +435,8 @@
                 <div id="invoice-history" class="history-table"></div>
               </article>
             </section>
-          </section>
 
-          <section class="module-screen" data-module="customers">
-            <div class="content-grid content-grid--two">
+            <section id="customer-add-view" class="billing-view" data-billing-view="customer-add">
               <article id="customer-add" class="panel module-card">
                 <div class="panel-head">
                   <div>
@@ -519,7 +503,9 @@
                   </div>
                 </form>
               </article>
+            </section>
 
+            <section id="customer-list-view" class="billing-view" data-billing-view="customer-list-panel">
               <article id="customer-list-panel" class="panel module-card">
                 <div class="panel-head">
                   <div>
@@ -529,7 +515,7 @@
                 </div>
                 <div id="customer-list" class="data-list"></div>
               </article>
-            </div>
+            </section>
           </section>
 
           <section class="module-screen" data-module="products">
@@ -733,7 +719,7 @@
   <script src="js/modules/dashboard-module.js"></script>
   <script src="js/modules/customers-module.js"></script>
   <script src="js/modules/products-module.js"></script>
-  <script src="js/modules/invoices-module.js"></script>
+  <script src="js/modules/sales-module.js"></script>
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -755,11 +741,21 @@
     const pwaTabButtons = document.querySelectorAll('.pwa-tab[data-module]');
     const moduleScreens = document.querySelectorAll('.module-screen');
 
-    function switchToModule(moduleName) {
+    function switchToModule(moduleName, isScan = false) {
       // Update tab active state (bottom nav)
       pwaTabButtons.forEach(btn => {
-        btn.classList.toggle('is-active', btn.dataset.module === moduleName);
-        btn.setAttribute('aria-selected', btn.dataset.module === moduleName);
+        let isActive = btn.dataset.module === moduleName;
+        // The SCAN button acts independently, so no blue pill for it
+        if (btn.id === 'tab-scan') {
+          isActive = false;
+        }
+        // If the user specifically tapped SCAN, do not highlight the Sales tab
+        if (isScan && btn.id === 'tab-billing') {
+          isActive = false;
+        }
+        
+        btn.classList.toggle('is-active', isActive);
+        btn.setAttribute('aria-selected', isActive);
       });
       // Show correct module screen
       moduleScreens.forEach(screen => {
@@ -768,7 +764,7 @@
       // Update toolbar title
       const titles = {
         dashboard: 'Dashboard',
-        invoices: 'Billing',
+        sales: 'Sales',
         customers: 'Customers',
         products: 'Products',
         admin: 'Settings'
@@ -781,11 +777,18 @@
     pwaTabButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const mod = btn.dataset.module;
-        switchToModule(mod);
+        
+        const isScan = btn.id === 'tab-scan';
+        
+        // Prevent Sales tab from opening Quick Bill by default safely
+        if (btn.id === 'tab-billing' && window.LedgerFlow && window.LedgerFlow.app && window.LedgerFlow.modules && window.LedgerFlow.modules.sales && typeof window.LedgerFlow.modules.sales.setActiveBillingView === 'function') {
+          window.LedgerFlow.modules.sales.setActiveBillingView(window.LedgerFlow.app, 'invoice');
+        }
+        
+        switchToModule(mod, isScan);
         // Also trigger the existing ERP sidebar navigation to keep it in sync
         const existingBtn = document.querySelector(`.feature-button[data-module="${mod}"]`);
         if (existingBtn && existingBtn !== btn) {
-          // Temporarily disable the sync listener to prevent infinite loop
           existingBtn.click();
         }
       });
@@ -794,10 +797,13 @@
     // When clicking sidebar buttons, sync the bottom nav
     document.addEventListener('click', (e) => {
       const featureBtn = e.target.closest('.feature-button[data-module]');
-      if (featureBtn) {
+      if (featureBtn && e.isTrusted) {
         const mod = featureBtn.dataset.module;
         pwaTabButtons.forEach(btn => {
-          btn.classList.toggle('is-active', btn.dataset.module === mod);
+          let isActive = btn.dataset.module === mod;
+          if (btn.id === 'tab-scan') isActive = false;
+          btn.classList.toggle('is-active', isActive);
+          btn.setAttribute('aria-selected', isActive);
         });
       }
     });

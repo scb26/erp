@@ -19,15 +19,66 @@ window.LedgerFlow = window.LedgerFlow || {};
     var html5QrcodeScanner = null;
 
     var quickBarcodeInput = document.getElementById("quick-barcode-input");
+    var quickSuggestions = document.getElementById("quick-barcode-suggestions");
+
     if (quickBarcodeInput) {
+      quickBarcodeInput.addEventListener("input", function() {
+        renderProductSuggestions(app, quickBarcodeInput.value, quickSuggestions);
+      });
+
       quickBarcodeInput.addEventListener("keydown", function (event) {
+        var items = quickSuggestions.querySelectorAll(".customer-suggestion");
+        var active = quickSuggestions.querySelector(".customer-suggestion.is-active");
+        var activeIdx = Array.prototype.indexOf.call(items, active);
+
         if (event.key === "Enter") {
           event.preventDefault();
-          scanProduct(app, quickBarcodeInput.value.trim());
-          quickBarcodeInput.value = "";
+          if (active) {
+            scanProduct(app, active.dataset.barcode || active.dataset.productId);
+            quickBarcodeInput.value = "";
+            quickSuggestions.hidden = true;
+          } else {
+            scanProduct(app, quickBarcodeInput.value.trim());
+            quickBarcodeInput.value = "";
+            quickSuggestions.hidden = true;
+          }
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          if (!items.length) return;
+          if (active) active.classList.remove("is-active");
+          var next = items[(activeIdx + 1) % items.length];
+          next.classList.add("is-active");
+          next.scrollIntoView({ block: "nearest" });
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          if (!items.length) return;
+          if (active) active.classList.remove("is-active");
+          var prev = items[(activeIdx - 1 + items.length) % items.length];
+          prev.classList.add("is-active");
+          prev.scrollIntoView({ block: "nearest" });
+        } else if (event.key === "Escape") {
+          quickSuggestions.hidden = true;
         }
       });
     }
+
+    if (quickSuggestions) {
+      quickSuggestions.addEventListener("click", function(e) {
+        var btn = e.target.closest(".customer-suggestion");
+        if (!btn) return;
+        scanProduct(app, btn.dataset.barcode || btn.dataset.productId);
+        quickBarcodeInput.value = "";
+        quickSuggestions.hidden = true;
+        quickBarcodeInput.focus();
+      });
+    }
+
+    // Hide suggestions when clicking elsewhere
+    document.addEventListener("click", function(e) {
+      if (quickBarcodeInput && !quickBarcodeInput.contains(e.target) && quickSuggestions && !quickSuggestions.contains(e.target)) {
+        quickSuggestions.hidden = true;
+      }
+    });
     var saveQuickCashBtn = document.getElementById("save-quick-bill-cash");
     if (saveQuickCashBtn) {
       saveQuickCashBtn.addEventListener("click", function() {
@@ -240,7 +291,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       setActiveBillingView(app, "invoice");
       app.renderAll();
       setMessage(app, "Invoice " + draft.invoiceNumber + " saved successfully. You can review it in the preview and history below.", "success");
-      app.setActiveModule("invoices");
+      app.setActiveModule("sales");
     });
 
     app.elements.invoiceHistory.addEventListener("click", function (event) {
@@ -254,7 +305,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
       renderPreview(app, app.previewInvoice);
       setActiveBillingView(app, "invoice");
-      app.setActiveModule("invoices");
+      app.setActiveModule("sales");
       document.getElementById("invoice-preview-panel").scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
@@ -265,6 +316,80 @@ window.LedgerFlow = window.LedgerFlow || {};
         printInvoice(draft);
       }
     });
+
+    // --- Integrated Customer Logic ---
+    if (app.elements.customerForm) {
+      app.elements.customerForm.addEventListener("submit", function (event) {
+        var customerId = app.elements.customerIdInput.value.trim();
+        var payload = buildCustomerPayload(app);
+        var validationError = validateCustomerPayload(payload);
+
+        event.preventDefault();
+
+        if (validationError) {
+          setCustomerMessage(app, validationError, "error");
+          return;
+        }
+
+        if (customerId) {
+          var index = app.data.customers.findIndex(function (c) {
+            return String(c.id) === String(customerId);
+          });
+          if (index !== -1) {
+            app.data.customers[index] = Object.assign({}, app.data.customers[index], payload, { id: customerId });
+          }
+          setCustomerMessage(app, "Customer updated successfully.", "success");
+        } else {
+          var newCustomer = Object.assign({}, payload, {
+            id: utils.createId("CUS"),
+            createdAt: new Date().toISOString()
+          });
+          app.data.customers.unshift(newCustomer);
+          setCustomerMessage(app, "Customer added successfully.", "success");
+        }
+
+        app.persist();
+        app.renderAll();
+        resetCustomerForm(app);
+      });
+    }
+
+    if (app.elements.customerCancelButton) {
+      app.elements.customerCancelButton.addEventListener("click", function () {
+        resetCustomerForm(app);
+      });
+    }
+
+    if (app.elements.customerRefreshButton) {
+      app.elements.customerRefreshButton.addEventListener("click", function () {
+        app.renderAll();
+        setCustomerMessage(app, "Customer list refreshed.", "success");
+      });
+    }
+
+    if (app.elements.customerList) {
+      app.elements.customerList.addEventListener("click", function (event) {
+        var action = event.target.dataset.customerAction;
+        var customerId = event.target.dataset.customerId;
+        if (!action || !customerId) return;
+
+        if (action === "edit") {
+          var customer = app.data.customers.find(function (c) { return String(c.id) === String(customerId); });
+          if (customer) {
+            fillCustomerForm(app, customer);
+            setCustomerMessage(app, "Editing customer " + customer.name + ".", "success");
+            document.getElementById("customer-add").scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        } else if (action === "delete") {
+          if (!window.confirm("Delete this customer? This cannot be undone.")) return;
+          app.data.customers = app.data.customers.filter(function (item) { return String(item.id) !== String(customerId); });
+          if (String(app.elements.customerIdInput.value) === String(customerId)) resetCustomerForm(app);
+          app.persist();
+          app.renderAll();
+          setCustomerMessage(app, "Customer deleted.", "success");
+        }
+      });
+    }
   }
 
   function render(app) {
@@ -1115,8 +1240,70 @@ window.LedgerFlow = window.LedgerFlow || {};
     return "INV-" + String(1001 + app.data.invoices.length);
   }
 
+  function renderProductSuggestions(app, query, container) {
+    if (!container) return;
+    var normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      container.hidden = true;
+      container.innerHTML = "";
+      return;
+    }
+
+    var matches = app.data.products.filter(function (product) {
+      return (product.name || "").toLowerCase().indexOf(normalizedQuery) !== -1 ||
+             (product.barcode || "").toLowerCase().indexOf(normalizedQuery) !== -1;
+    }).slice(0, 8);
+
+    if (!matches.length) {
+      container.hidden = true;
+      container.innerHTML = "";
+      return;
+    }
+
+    container.innerHTML = matches.map(function (product) {
+      return [
+        '<button class="customer-suggestion" type="button" data-product-id="' + product.id + '" data-barcode="' + (product.barcode || "") + '">',
+        '<div style="display:flex; justify-content:space-between; align-items:center;">',
+        '<div>',
+        '<span class="customer-suggestion__name">' + utils.escapeHtml(product.name) + "</span><br>",
+        '<small>Barcode: ' + utils.escapeHtml(product.barcode || "-") + "</small>",
+        '</div>',
+        '<strong style="color:var(--accent);">' + utils.formatCurrency(product.price) + '</strong>',
+        '</div>',
+        "</button>"
+      ].join("");
+    }).join("");
+    container.hidden = false;
+  }
+
+  function render(app) {
+    applyBillingView(app);
+    
+    if (app.activeBillingView === "history") {
+      renderHistory(app);
+    } else if (app.activeBillingView === "invoice") {
+      renderInvoiceForm(app);
+    }
+    
+    // Independent Quick Bill components
+    renderQuickBillCart(app);
+    syncPreview(app);
+    
+    // --- Integrated Customer Rendering ---
+    renderCustomerList(app);
+    updateInvoiceCustomerOptions(app);
+    
+    ensureDefaults(app);
+    syncLineItemProductOptions(app);
+    renderCustomerSuggestions(app);
+  }
+
   function setActiveBillingView(app, viewKey) {
-    app.activeBillingView = (viewKey === "invoice" || viewKey === "history") ? viewKey : "quick-bill";
+    // Expand to include customer-related views
+    var validViews = ["invoice", "history", "customer-list-panel", "customer-add"];
+    app.activeBillingView = validViews.indexOf(viewKey) !== -1 ? viewKey : "quick-bill";
+    
     applyBillingView(app);
     if (ns.navigation && typeof ns.navigation.renderModuleMenu === "function") {
       ns.navigation.renderModuleMenu(app);
@@ -1132,10 +1319,17 @@ window.LedgerFlow = window.LedgerFlow || {};
     app.elements.billingViews.forEach(function (view) {
       view.classList.toggle("is-active", view.dataset.billingView === app.activeBillingView);
     });
-  }
 
-  function emptyTotals() {
-    return { subtotal: 0, cgst: 0, sgst: 0, igst: 0, grandTotal: 0 };
+    // --- PWA High-Speed Focus Mode ---
+    // Hide toolbar if in Quick Bill (the SCAN context)
+    var toolbar = document.querySelector(".workspace-toolbar");
+    if (toolbar) {
+      if (app.activeBillingView === "quick-bill") {
+        toolbar.style.display = "none";
+      } else {
+        toolbar.style.display = "grid"; // restore standard grid
+      }
+    }
   }
 
   function valueOf(id) {
@@ -1180,16 +1374,129 @@ window.LedgerFlow = window.LedgerFlow || {};
     balanceValue.textContent = utils.formatCurrency(balanceDue > 0 ? balanceDue : 0);
   }
 
-  function setMessage(app, message, type) {
-    app.elements.invoiceFormMessage.textContent = message || "";
-    app.elements.invoiceFormMessage.className = "form-message field-span";
-
-    if (type) {
-      app.elements.invoiceFormMessage.classList.add("form-message--" + type);
-    }
+  function setCustomerMessage(app, message, type) {
+    if (!app.elements.customerFormMessage) return;
+    app.elements.customerFormMessage.textContent = message || "";
+    app.elements.customerFormMessage.className = "form-message field-span";
+    if (type) app.elements.customerFormMessage.classList.add("form-message--" + type);
   }
 
-  ns.modules.invoices = {
+  function renderCustomerList(app) {
+    if (!app.elements.customerList) return;
+    if (!app.data.customers.length) {
+      app.elements.customerList.innerHTML = '<div class="empty-state">No customers yet. Add your first customer above.</div>';
+      return;
+    }
+    app.elements.customerList.innerHTML = app.data.customers.map(function (customer) {
+      return [
+        '<article class="data-card">',
+        '<div class="data-card__head">',
+        '<h3>' + utils.escapeHtml(customer.name) + "</h3>",
+        '<div class="data-card__actions">',
+        '<button class="button button--secondary" type="button" data-customer-action="edit" data-customer-id="' + customer.id + '">Edit</button>',
+        '<button class="button button--secondary" type="button" data-customer-action="delete" data-customer-id="' + customer.id + '">Delete</button>',
+        "</div>",
+        "</div>",
+        '<div class="data-card__meta">',
+        "<p><strong>Mobile:</strong> " + utils.escapeHtml(customer.mobile || "-") + "</p>",
+        "<p><strong>Type:</strong> " + utils.escapeHtml(customer.customerType || "-") + "</p>",
+        "<p><strong>State:</strong> " + utils.escapeHtml(customer.state || "-") + "</p>",
+        "<p><strong>GST:</strong> " + utils.escapeHtml(customer.gstNumber || "-") + "</p>",
+        "<p><strong>Email:</strong> " + utils.escapeHtml(customer.email || "-") + "</p>",
+        "<p><strong>Address:</strong> " + utils.escapeHtml(customer.address || "-") + "</p>",
+        "</div>",
+        "</article>"
+      ].join("");
+    }).join("");
+  }
+
+  function updateInvoiceCustomerOptions(app) {
+    var currentSelection = String(app.elements.invoiceCustomerSelect.value || "");
+    if (!app.elements.invoiceCustomerNameInput || !app.elements.invoiceCustomerSelect) return;
+    if (!app.data.customers.length) {
+      app.elements.invoiceCustomerSelect.value = "";
+      return;
+    }
+    var selectedCustomer = app.data.customers.find(function (customer) {
+      return String(customer.id) === currentSelection;
+    }) || null;
+    if (!selectedCustomer) {
+      app.elements.invoiceCustomerSelect.value = "";
+      return;
+    }
+    app.elements.invoiceCustomerNameInput.value = selectedCustomer.name;
+  }
+
+  function resetCustomerForm(app) {
+    app.elements.customerForm.reset();
+    app.elements.customerIdInput.value = "";
+    app.elements.customerTypeSelect.value = "Individual";
+    app.elements.customerOpeningBalanceInput.value = "0";
+    app.elements.customerStateSelect.value = app.data.company.state || "";
+    setCustomerFormMode(app, "create");
+    setCustomerMessage(app, "", "");
+  }
+
+  function fillCustomerForm(app, customer) {
+    app.elements.customerIdInput.value = String(customer.id);
+    app.elements.customerNameInput.value = customer.name || "";
+    app.elements.customerMobileInput.value = customer.mobile || "";
+    app.elements.customerTypeSelect.value = customer.customerType || "Individual";
+    app.elements.customerCompanyNameInput.value = customer.companyName || "";
+    app.elements.customerStateSelect.value = customer.state || app.data.company.state || "";
+    app.elements.customerGstNumberInput.value = customer.gstNumber || "";
+    app.elements.customerEmailInput.value = customer.email || "";
+    app.elements.customerOpeningBalanceInput.value = String(customer.openingBalance || 0);
+    app.elements.customerCreditLimitInput.value = customer.creditLimit === null ? "" : String(customer.creditLimit);
+    app.elements.customerCityInput.value = customer.city || "";
+    app.elements.customerPincodeInput.value = customer.pincode || "";
+    app.elements.customerAddressInput.value = customer.address || "";
+    setCustomerFormMode(app, "edit");
+  }
+
+  function setCustomerFormMode(app, mode) {
+    var isEdit = mode === "edit";
+    app.elements.customerFormTitle.textContent = isEdit ? "Edit customer" : "Add customer";
+    app.elements.customerSubmitButton.textContent = isEdit ? "Update customer" : "Add customer";
+    app.elements.customerCancelButton.hidden = !isEdit;
+  }
+
+  function validateCustomerPayload(payload) {
+    if (!payload.name) return "Customer name is required.";
+    return null;
+  }
+
+  function buildCustomerPayload(app) {
+    return {
+      name: valueOf("customer-name"),
+      mobile: valueOf("customer-mobile"),
+      customerType: app.elements.customerTypeSelect.value,
+      companyName: valueOf("customer-company-name") || "",
+      address: valueOf("customer-address") || "",
+      gstNumber: valueOf("customer-gst-number") || "",
+      openingBalance: numberOrDefault("customer-opening-balance", 0),
+      creditLimit: nullableNumber("customer-credit-limit"),
+      email: valueOf("customer-email") || "",
+      city: valueOf("customer-city") || "",
+      state: app.elements.customerStateSelect.value || "",
+      pincode: valueOf("customer-pincode") || ""
+    };
+  }
+
+  function numberOrDefault(id, fallback) {
+    var el = document.getElementById(id);
+    var numericValue = parseFloat(el ? el.value : "");
+    return Number.isNaN(numericValue) ? fallback : numericValue;
+  }
+
+  function nullableNumber(id) {
+    var el = document.getElementById(id);
+    var rawValue = el ? el.value.trim() : "";
+    if (!rawValue) return null;
+    return numberOrDefault(id, null);
+  }
+
+  ns.modules.sales = {
     init: init,
     render: render,
     setActiveBillingView: setActiveBillingView

@@ -112,12 +112,48 @@ window.LedgerFlow = window.LedgerFlow || {};
     });
 
     app.elements.invoiceHistory.addEventListener("click", function (event) {
-      if (!event.target.dataset.invoiceId) {
+      var btn = event.target.closest("[data-invoice-id]");
+      if (!btn) return;
+
+      var invoiceId = btn.dataset.invoiceId;
+      var action = btn.dataset.invoiceAction || "view";
+
+      if (action === "delete") {
+        // Inline confirm — PWA-safe (no window.confirm)
+        if (btn.dataset.confirmPending === "true") {
+          // Second tap — confirmed, proceed with delete
+          var invoiceToDelete = app.data.invoices.find(function(inv) { return String(inv.id) === String(invoiceId); });
+          if (invoiceToDelete) {
+            restoreStock(app, invoiceToDelete.items);
+            if (app.previewInvoice && String(app.previewInvoice.id) === String(invoiceId)) {
+              app.previewInvoice = null;
+              renderPreview(app, null);
+            }
+          }
+          app.data.invoices = app.data.invoices.filter(function(inv) { return String(inv.id) !== String(invoiceId); });
+          app.persist();
+          app.renderAll();
+          setMessage(app, "Invoice deleted and stock restored.", "success");
+        } else {
+          // First tap — ask for confirmation
+          btn.dataset.confirmPending = "true";
+          btn.textContent = "Confirm?";
+          btn.style.background = "var(--danger, #ef4444)";
+          btn.style.color = "#fff";
+          setTimeout(function() {
+            if (btn.dataset.confirmPending) {
+              btn.dataset.confirmPending = "";
+              btn.textContent = "Delete";
+              btn.style.background = "";
+              btn.style.color = "";
+            }
+          }, 3000);
+        }
         return;
       }
 
       app.previewInvoice = app.data.invoices.find(function (savedInvoice) {
-        return String(savedInvoice.id) === String(event.target.dataset.invoiceId);
+        return String(savedInvoice.id) === String(invoiceId);
       }) || null;
 
       renderPreview(app, app.previewInvoice);
@@ -198,12 +234,27 @@ window.LedgerFlow = window.LedgerFlow || {};
             document.getElementById("customer-add").scrollIntoView({ behavior: "smooth", block: "start" });
           }
         } else if (action === "delete") {
-          if (!window.confirm("Delete this customer? This cannot be undone.")) return;
-          app.data.customers = app.data.customers.filter(function (item) { return String(item.id) !== String(customerId); });
-          if (String(app.elements.customerIdInput.value) === String(customerId)) resetCustomerForm(app);
-          app.persist();
-          app.renderAll();
-          setCustomerMessage(app, "Customer deleted.", "success");
+          // PWA-safe inline confirm — two-tap pattern
+          if (event.target.dataset.confirmPending === "true") {
+            app.data.customers = app.data.customers.filter(function (item) { return String(item.id) !== String(customerId); });
+            if (String(app.elements.customerIdInput.value) === String(customerId)) resetCustomerForm(app);
+            app.persist();
+            app.renderAll();
+            setCustomerMessage(app, "Customer deleted.", "success");
+          } else {
+            event.target.dataset.confirmPending = "true";
+            event.target.textContent = "Confirm?";
+            event.target.style.background = "var(--danger, #ef4444)";
+            event.target.style.color = "#fff";
+            setTimeout(function() {
+              if (event.target.dataset.confirmPending) {
+                event.target.dataset.confirmPending = "";
+                event.target.textContent = "Delete";
+                event.target.style.background = "";
+                event.target.style.color = "";
+              }
+            }, 3000);
+          }
         }
       });
     }
@@ -425,6 +476,16 @@ window.LedgerFlow = window.LedgerFlow || {};
     });
   }
 
+  function restoreStock(app, items) {
+    if (!items || !items.length) return;
+    items.forEach(function(item) {
+      var product = app.data.products.find(function(p) { return p.id === item.productId; });
+      if (product) {
+        product.stock = (product.stock || 0) + item.quantity;
+      }
+    });
+  }
+
   function resetForm(app, options) {
     var keepPreview = !!(options && options.keepPreview);
 
@@ -568,7 +629,10 @@ window.LedgerFlow = window.LedgerFlow || {};
         '<span class="history-row__cell history-row__cell--status">' + statusBadge + "</span>",
         '<span class="history-row__cell history-row__cell--customer">' + utils.escapeHtml(invoice.customer.name) + "</span>",
         '<span class="history-row__cell history-row__cell--total">' + totalDisplay + "</span>",
-        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '">View</button>',
+        '<div style="display:flex;gap:6px;">',
+        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '" data-invoice-action="view">View</button>',
+        '<button class="button button--secondary history-row__action" type="button" data-invoice-id="' + invoice.id + '" data-invoice-action="delete" style="color:var(--danger,#ef4444);">Delete</button>',
+        '</div>',
         "</div>"
       ].join("");
     }).join("");

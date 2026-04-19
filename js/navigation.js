@@ -35,6 +35,8 @@ window.LedgerFlow = window.LedgerFlow || {};
     // Clear stale Quick Bill focus classes from older flows before toggling the new state.
     document.body.classList.remove("quick-bill-focus", "quick-bill-toolbar-hidden");
     document.body.classList.toggle("quickbill-mobile-active", app.activeModule === "quickbill");
+    // Show site header (Unidex ERP brand + theme toggle) only on the Settings/Admin screen in PWA.
+    document.body.classList.toggle("admin-active", app.activeModule === "admin");
 
     app.elements.featureButtons.forEach(function (button) {
       button.classList.toggle("is-active", button.dataset.module === app.activeModule);

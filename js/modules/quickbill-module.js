@@ -5,43 +5,124 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   ns.modules = ns.modules || {};
 
+  var html5QrCode = null;
+  var lastScanMap = {};
+  var scanDebounceMs = 3000;
+  var audioCtx = null;
+  var cameraStarted = false; // Fix 11: explicit flag prevents re-init on every renderAll
+
+  function playBeep() {
+    try {
+      if (!audioCtx) {
+        var AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      var oscillator = audioCtx.createOscillator();
+      var gainNode = audioCtx.createGain();
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(2000, audioCtx.currentTime); // High pitch scanner beep
+      
+      gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    } catch(e) {
+      console.warn("Could not play beep", e);
+    }
+  }
+
   function init(app) {
-    var quickBarcodeInput = document.getElementById("quick-barcode-input");
-    var quickSuggestions = document.getElementById("quick-barcode-suggestions");
-    var quickCartContainer = document.getElementById("quick-bill-cart-container");
-    var saveQuickCashBtn = document.getElementById("save-quick-bill-cash");
-    var saveQuickUpiBtn = document.getElementById("save-quick-bill-upi");
-    var cameraBtn = document.getElementById("start-camera-scan");
-
-    if (!app.quickBillCart) {
-      app.quickBillCart = [];
-    }
-
-    if (app.quickBillInitialized) {
-      return;
-    }
-
+    if (!app.quickBillCart) app.quickBillCart = [];
+    if (app.quickBillInitialized) return;
     app.quickBillInitialized = true;
 
-    if (quickBarcodeInput) {
-      quickBarcodeInput.addEventListener("input", function () {
-        renderProductSuggestions(app, quickBarcodeInput.value, quickSuggestions);
+    // --- PWA View Toggles ---
+    var viewCartBtn = document.getElementById("qb-view-cart-btn");
+    var backToScanBtn = document.getElementById("qb-back-to-scan-btn");
+    var fabBtn = document.getElementById("qb-manual-search-fab");
+    var closeSheetBtn = document.getElementById("qb-close-sheet-btn");
+    var manualSearchSheet = document.getElementById("qb-manual-search-sheet");
+
+    if (viewCartBtn) {
+      viewCartBtn.addEventListener("click", function () {
+        document.getElementById("qb-camera-view").hidden = true;
+        document.getElementById("qb-cart-view").hidden = false;
+      });
+    }
+
+    if (backToScanBtn) {
+      backToScanBtn.addEventListener("click", function () {
+        document.getElementById("qb-cart-view").hidden = true;
+        document.getElementById("qb-camera-view").hidden = false;
+        renderQuickBillCart(app); // Fix 6: ensure cart bar stays visible on return
+      });
+    }
+
+    if (fabBtn) {
+      fabBtn.addEventListener("click", function () {
+        if (manualSearchSheet) manualSearchSheet.hidden = false;
+        setTimeout(function() { manualSearchSheet.classList.add("is-open"); }, 10);
+        var input = document.getElementById("quick-barcode-input-pwa");
+        if (input) {
+          input.value = "";
+          input.focus();
+        }
+      });
+    }
+
+    // Fix 8: Tap backdrop (the sheet overlay itself) to close
+    if (manualSearchSheet) {
+      manualSearchSheet.addEventListener("click", function(event) {
+        if (event.target === manualSearchSheet) {
+          manualSearchSheet.classList.remove("is-open");
+          setTimeout(function() { manualSearchSheet.hidden = true; }, 300);
+        }
+      });
+    }
+
+    if (closeSheetBtn) {
+      closeSheetBtn.addEventListener("click", function () {
+        if (manualSearchSheet) {
+          manualSearchSheet.classList.remove("is-open");
+          setTimeout(function() { manualSearchSheet.hidden = true; }, 300);
+        }
+      });
+    }
+
+    // --- Search Inputs (Both Web and PWA) ---
+    function setupInputs(prefix) {
+      var input = document.getElementById("quick-barcode-input-" + prefix);
+      var suggestions = document.getElementById("quick-barcode-suggestions-" + prefix);
+
+      if (!input || !suggestions) return;
+
+      input.addEventListener("input", function () {
+        renderProductSuggestions(app, input.value, suggestions, prefix);
       });
 
-      quickBarcodeInput.addEventListener("keydown", function (event) {
-        var items = quickSuggestions.querySelectorAll(".customer-suggestion");
-        var active = quickSuggestions.querySelector(".customer-suggestion.is-active");
+      input.addEventListener("keydown", function (event) {
+        var items = suggestions.querySelectorAll(".customer-suggestion");
+        var active = suggestions.querySelector(".customer-suggestion.is-active");
         var activeIdx = Array.prototype.indexOf.call(items, active);
 
         if (event.key === "Enter") {
           event.preventDefault();
           if (active) {
-            scanProduct(app, active.dataset.barcode || active.dataset.productId);
+            scanProduct(app, active.dataset.barcode || active.dataset.productId, prefix);
           } else {
-            scanProduct(app, quickBarcodeInput.value.trim());
+            scanProduct(app, input.value.trim(), prefix);
           }
-          quickBarcodeInput.value = "";
-          quickSuggestions.hidden = true;
+          input.value = "";
+          suggestions.hidden = true;
         } else if (event.key === "ArrowDown") {
           event.preventDefault();
           if (!items.length) return;
@@ -53,163 +134,244 @@ window.LedgerFlow = window.LedgerFlow || {};
           if (active) active.classList.remove("is-active");
           items[(activeIdx - 1 + items.length) % items.length].classList.add("is-active");
         } else if (event.key === "Escape") {
-          quickSuggestions.hidden = true;
+          suggestions.hidden = true;
         }
       });
-    }
 
-    if (quickSuggestions) {
-      quickSuggestions.addEventListener("click", function (event) {
+      suggestions.addEventListener("click", function (event) {
         var btn = event.target.closest(".customer-suggestion");
         if (!btn) return;
-        scanProduct(app, btn.dataset.barcode || btn.dataset.productId);
-        if (quickBarcodeInput) {
-          quickBarcodeInput.value = "";
-          quickBarcodeInput.focus();
+        scanProduct(app, btn.dataset.barcode || btn.dataset.productId, prefix);
+        input.value = "";
+        input.focus();
+        suggestions.hidden = true;
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!input.contains(event.target) && !suggestions.contains(event.target)) {
+          suggestions.hidden = true;
         }
-        quickSuggestions.hidden = true;
       });
     }
 
-    document.addEventListener("click", function (event) {
-      if (quickBarcodeInput && !quickBarcodeInput.contains(event.target) && quickSuggestions && !quickSuggestions.contains(event.target)) {
-        quickSuggestions.hidden = true;
-      }
-    });
+    setupInputs("web");
+    setupInputs("pwa");
 
-    if (quickCartContainer) {
-      quickCartContainer.addEventListener("click", function (event) {
-        var btn = event.target.closest("[data-action]");
-        var idx;
+    // --- Carts (Both Web and PWA) ---
+    function setupCart(prefix) {
+      var container = document.getElementById("quick-bill-cart-container-" + prefix);
+      if (container) {
+        container.addEventListener("click", function (event) {
+          var btn = event.target.closest("[data-action]");
+          if (!btn) return;
 
-        if (!btn) return;
-
-        idx = parseInt(btn.dataset.index, 10);
-
-        if (btn.dataset.action === "show-all") {
-          showAllItemsModal(app);
-          return;
-        }
-
-        if (Number.isNaN(idx) || idx < 0 || idx >= (app.quickBillCart || []).length) {
-          return;
-        }
-
-        if (btn.dataset.action === "remove") {
-          app.quickBillCart.splice(idx, 1);
-        } else if (btn.dataset.action === "inc") {
-          app.quickBillCart[idx].quantity += 1;
-          app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
-        } else if (btn.dataset.action === "dec") {
-          if (app.quickBillCart[idx].quantity > 1) {
-            app.quickBillCart[idx].quantity -= 1;
-            app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
-          } else {
-            app.quickBillCart.splice(idx, 1);
+          var idx = parseInt(btn.dataset.index, 10);
+          if (Number.isNaN(idx) || idx < 0 || idx >= (app.quickBillCart || []).length) {
+            return;
           }
-        }
 
-        renderQuickBillCart(app);
-        syncAllItemsModal(app);
-      });
+          if (btn.dataset.action === "remove") {
+            app.quickBillCart.splice(idx, 1);
+          } else if (btn.dataset.action === "inc") {
+            app.quickBillCart[idx].quantity += 1;
+            app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
+          } else if (btn.dataset.action === "dec") {
+            if (app.quickBillCart[idx].quantity > 1) {
+              app.quickBillCart[idx].quantity -= 1;
+              app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
+            } else {
+              app.quickBillCart.splice(idx, 1);
+            }
+          }
+
+          renderQuickBillCart(app);
+        });
+      }
+
+      var cashBtn = document.getElementById("save-quick-bill-cash-" + prefix);
+      if (cashBtn) {
+        cashBtn.addEventListener("click", function () {
+          submitQuickBill(app, "cash");
+        });
+      }
+
+      var upiBtn = document.getElementById("save-quick-bill-upi-" + prefix);
+      if (upiBtn) {
+        upiBtn.addEventListener("click", function () {
+          showUpiModal(app);
+        });
+      }
     }
 
-    if (saveQuickCashBtn) {
-      saveQuickCashBtn.addEventListener("click", function () {
-        submitQuickBill(app, "cash");
-      });
-    }
+    setupCart("web");
+    setupCart("pwa");
 
-    if (saveQuickUpiBtn) {
-      saveQuickUpiBtn.addEventListener("click", function () {
-        showUpiModal(app);
-      });
-    }
-
-    if (cameraBtn) {
-      bindCameraButton(app, cameraBtn);
+    // --- Web Camera Manual Toggle ---
+    var cameraBtnWeb = document.getElementById("start-camera-scan-web");
+    if (cameraBtnWeb) {
+      bindCameraButton(app, cameraBtnWeb, "web");
     }
   }
 
   function render(app) {
-    var standaloneView = document.getElementById("quickbill-module-view");
+    var standaloneView = document.getElementById("quickbill-module-screen");
 
     if (!standaloneView) {
       return;
     }
 
-    standaloneView.classList.toggle("is-active", app.activeModule === "quickbill");
+    var isActive = app.activeModule === "quickbill";
+    standaloneView.classList.toggle("is-active", isActive);
+    
+    var isPWA = window.matchMedia('(display-mode: standalone)').matches || window.innerWidth <= 768;
+
+    var webView = document.getElementById("qb-web-view");
+    var pwaView = document.getElementById("qb-pwa-container");
+
+    if (isActive) {
+      if (isPWA) {
+        if (webView) webView.hidden = true;
+        if (pwaView) pwaView.hidden = false;
+        
+        document.body.classList.add("hide-site-header");
+        
+        var cartView = document.getElementById("qb-cart-view");
+        var cameraView = document.getElementById("qb-camera-view");
+        if (cartView) cartView.hidden = true;
+        if (cameraView) cameraView.hidden = false;
+        
+        // Force synchronous layout calculation so the container has dimensions
+        void cameraView.offsetHeight;
+        
+        if (!cameraStarted) { // Fix 11: only start once, not on every renderAll
+          cameraStarted = true;
+          startCamera(app, "pwa");
+        }
+      } else {
+        if (webView) webView.hidden = false;
+        if (pwaView) pwaView.hidden = true;
+        document.body.classList.remove("hide-site-header");
+        cameraStarted = false; // Fix 11: reset flag when leaving PWA mode
+        stopCamera();
+      }
+    } else {
+      document.body.classList.remove("hide-site-header");
+      cameraStarted = false; // Fix 11: reset flag when module deactivated
+      stopCamera();
+    }
+    
     renderQuickBillCart(app);
   }
 
-  function bindCameraButton(app, cameraBtn) {
-    var html5QrcodeScanner = null;
-    var lastScanMap = {};
-    var scanDebounceMs = 5000;
+  function startCamera(app, prefix) {
+    var readerId = "camera-reader-" + prefix;
+    var readerEl = document.getElementById(readerId);
+    var statusEl = document.getElementById("camera-reader-status-" + prefix);
 
-    cameraBtn.addEventListener("click", function () {
-      var readerEl = document.getElementById("camera-reader");
-      var statusEl = document.getElementById("camera-reader-status");
+    if (!readerEl) return;
+    if (typeof Html5Qrcode === "undefined") {
+      if (statusEl) statusEl.textContent = "Scanner library not loaded. Check internet.";
+      return;
+    }
 
-      if (!readerEl) {
-        return;
+    if (html5QrCode) return; // Already running
+
+    readerEl.style.display = "block";
+    
+    // Force layout calculation
+    var w = readerEl.clientWidth;
+    var h = readerEl.clientHeight;
+    
+    html5QrCode = new Html5Qrcode(readerId);
+
+    var config = { 
+      fps: 10
+    };
+
+    var onSuccess = function (decodedText) {
+      var now = Date.now();
+      var lastScan = lastScanMap[decodedText] || 0;
+      if (now - lastScan < scanDebounceMs) return;
+
+      lastScanMap[decodedText] = now;
+      scanProduct(app, decodedText, prefix);
+      
+      playBeep();
+
+      if (navigator && navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
       }
+    };
+
+    var onCatch = function(err) {
+      if (statusEl) statusEl.innerHTML = 'Camera blocked by browser.<br><br><button id="pwa-force-start-btn" style="padding: 15px 30px; font-size: 1.2rem; border-radius: 30px; background: #007aff; color: #fff; border: none; cursor: pointer; pointer-events: auto;">Tap to Open Camera</button>';
+      
+      setTimeout(function() {
+        var forceBtn = document.getElementById("pwa-force-start-btn");
+        if (forceBtn) {
+          forceBtn.addEventListener("click", function() {
+            statusEl.textContent = "Starting...";
+            html5QrCode.start({ facingMode: "environment" }, config, onSuccess, function(){}).catch(function(e) {
+              statusEl.textContent = "Could not start camera: " + (e.message || e);
+            });
+          });
+        }
+      }, 100);
+      
+      console.warn("Html5Qrcode start error", err);
+    };
+
+    html5QrCode.start({ facingMode: "environment" }, config, onSuccess, function(){}).catch(onCatch);
+  }
+
+  function bindCameraButton(app, cameraBtn, prefix) {
+    cameraBtn.addEventListener("click", function () {
+      var readerEl = document.getElementById("camera-reader-" + prefix);
+      var statusEl = document.getElementById("camera-reader-status-" + prefix);
+
+      if (!readerEl) return;
 
       if (readerEl.style.display === "block") {
         readerEl.style.display = "none";
         cameraBtn.textContent = "Camera";
-        if (html5QrcodeScanner) {
-          html5QrcodeScanner.clear();
-        }
-        lastScanMap = {};
+        stopCamera();
         return;
       }
 
-      if (typeof Html5QrcodeScanner === "undefined") {
-        if (statusEl) {
-          statusEl.textContent = "Scanner library not loaded. Check internet connection.";
-        }
+      if (typeof Html5Qrcode === "undefined") {
+        if (statusEl) statusEl.textContent = "Scanner library not loaded. Check internet connection.";
         return;
       }
 
-      readerEl.style.display = "block";
       cameraBtn.textContent = "Stop Camera";
-      if (statusEl) {
-        statusEl.textContent = "Starting camera...";
-      }
-
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "camera-reader",
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        false
-      );
-
-      html5QrcodeScanner.render(function (decodedText) {
-        var now = Date.now();
-        var lastScan = lastScanMap[decodedText] || 0;
-
-        if (now - lastScan < scanDebounceMs) {
-          return;
-        }
-
-        lastScanMap[decodedText] = now;
-        scanProduct(app, decodedText);
-
-        if (navigator && navigator.vibrate) {
-          navigator.vibrate(200);
-        }
-
-        if (statusEl) {
-          statusEl.innerHTML = '<span style="color: var(--accent);">Scanned</span>';
-          setTimeout(function () {
-            statusEl.innerHTML = "";
-          }, 1500);
-        }
-      }, function () {});
+      if (statusEl) statusEl.textContent = "Starting camera...";
+      startCamera(app, prefix);
     });
   }
 
-  function renderProductSuggestions(app, query, container) {
+  function stopCamera() {
+    if (html5QrCode) {
+      try {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().then(function() {
+            html5QrCode.clear();
+            html5QrCode = null; // Fix 1 (partial): null inside .then() after stop resolves
+          }).catch(function(e) { console.warn("Failed to stop", e); html5QrCode = null; });
+        } else {
+          html5QrCode.clear();
+          html5QrCode = null;
+        }
+      } catch (e) { html5QrCode = null; }
+    }
+    // Fix 15: Close AudioContext to free mobile browser audio resources
+    if (audioCtx) {
+      try { audioCtx.close(); } catch(e) {}
+      audioCtx = null;
+    }
+    lastScanMap = {};
+  }
+
+  function renderProductSuggestions(app, query, container, prefix) {
     var normalizedQuery;
     var matches;
 
@@ -250,12 +412,20 @@ window.LedgerFlow = window.LedgerFlow || {};
     container.hidden = false;
   }
 
-  function scanProduct(app, barcode) {
+  function scanProduct(app, barcode, prefix) {
     var product;
-    var statusEl = document.getElementById("camera-reader-status");
+    var statusEl = document.getElementById("camera-reader-status-" + prefix);
     var existingItem;
 
     if (!barcode) return;
+
+    // Fix 4: Prune stale debounce entries to prevent unbounded memory growth
+    var now = Date.now();
+    Object.keys(lastScanMap).forEach(function(key) {
+      if (now - lastScanMap[key] > scanDebounceMs * 2) {
+        delete lastScanMap[key];
+      }
+    });
 
     product = app.data.products.find(function (candidate) {
       return String(candidate.barcode || "") === String(barcode) || String(candidate.id) === String(barcode);
@@ -265,6 +435,13 @@ window.LedgerFlow = window.LedgerFlow || {};
       if (statusEl) {
         statusEl.textContent = "Product not found for barcode: " + barcode;
         statusEl.style.color = "var(--danger)";
+        // Fix 5: Auto-clear error after 3 seconds
+        setTimeout(function() {
+          if (statusEl.textContent.indexOf("not found") !== -1) {
+            statusEl.textContent = "";
+            statusEl.style.color = "";
+          }
+        }, 3000);
       }
       return;
     }
@@ -296,37 +473,75 @@ window.LedgerFlow = window.LedgerFlow || {};
       }, 2000);
     }
 
+    if (prefix === "pwa") {
+      var manualSearchSheet = document.getElementById("qb-manual-search-sheet");
+      if (manualSearchSheet && manualSearchSheet.classList.contains("is-open")) {
+        manualSearchSheet.classList.remove("is-open");
+        setTimeout(function() { manualSearchSheet.hidden = true; }, 300);
+      }
+    }
+
     renderQuickBillCart(app);
   }
 
   function renderQuickBillCart(app) {
     var cart = app.quickBillCart || [];
-    var container = document.getElementById("quick-bill-cart-container");
-    var totalEl = document.getElementById("quick-bill-total");
-    var countEl = document.getElementById("quick-bill-item-count");
+    
+    var containerWeb = document.getElementById("quick-bill-cart-container-web");
+    var totalElWeb = document.getElementById("quick-bill-total-web");
+    var countElWeb = document.getElementById("quick-bill-item-count-web");
+
+    var containerPwa = document.getElementById("quick-bill-cart-container-pwa");
+    var cameraTotalEl = document.getElementById("qb-camera-total");
+    var cameraCountEl = document.getElementById("qb-camera-item-count");
+    var cartTotalElPwa = document.getElementById("quick-bill-total-pwa");
+    var cartCountElPwa = document.getElementById("quick-bill-item-count-pwa");
+    var emptyMsgPwa = document.getElementById("qb-empty-state-msg");
+    var bottomBarContentPwa = document.querySelector(".qb-bottom-bar-content");
+
     var helpers = getSalesHelpers();
     var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : "" };
     var totals;
-    var maxVisible = 4;
     var rows;
-    var showAllBtn = "";
-
-    if (!container) return;
 
     if (!cart.length) {
-      container.innerHTML = '<div class="pos-cart-empty">Cart is empty — scan a product to begin.</div>';
-      if (totalEl) totalEl.textContent = "₹0.00";
-      if (countEl) countEl.textContent = "";
+      var emptyWebHtml = '<div class="pos-cart-empty">Cart is empty — scan a product to begin.</div>';
+      if (containerWeb) containerWeb.innerHTML = emptyWebHtml;
+      if (containerPwa) containerPwa.innerHTML = emptyWebHtml;
+      
+      if (totalElWeb) totalElWeb.textContent = "₹0.00";
+      if (countElWeb) countElWeb.textContent = "";
+
+      if (cameraTotalEl) cameraTotalEl.textContent = "₹0.00";
+      if (cartTotalElPwa) cartTotalElPwa.textContent = "₹0.00";
+      if (cameraCountEl) cameraCountEl.textContent = "Items: 0";
+      
+      if (emptyMsgPwa) emptyMsgPwa.style.display = "block";
+      if (bottomBarContentPwa) bottomBarContentPwa.style.display = "none";
       return;
     }
 
+    if (emptyMsgPwa) emptyMsgPwa.style.display = "none";
+    if (bottomBarContentPwa) bottomBarContentPwa.style.display = "flex";
+
     totals = helpers.calculateTotals(app, defaultCustomer, cart);
-    if (totalEl) totalEl.textContent = utils.formatCurrency(totals.grandTotal);
-    if (countEl) {
-      countEl.textContent = "(" + cart.reduce(function (sum, item) { return sum + item.quantity; }, 0) + " items)";
+    var formattedTotal = utils.formatCurrency(totals.grandTotal);
+    var totalItems = cart.reduce(function (sum, item) { return sum + item.quantity; }, 0);
+
+    // Update Web
+    if (totalElWeb) totalElWeb.textContent = formattedTotal;
+    if (countElWeb) countElWeb.textContent = "(" + totalItems + " items)";
+
+    // Update PWA
+    if (cameraTotalEl) cameraTotalEl.textContent = formattedTotal;
+    if (cartTotalElPwa) cartTotalElPwa.textContent = formattedTotal;
+    if (cameraCountEl) cameraCountEl.textContent = "Items: " + totalItems;
+    if (cartCountElPwa) {
+      cartCountElPwa.textContent = "(" + totalItems + " items)";
+      cartCountElPwa.hidden = false;
     }
 
-    rows = cart.slice(0, maxVisible).map(function (item, index) {
+    rows = cart.map(function (item, index) {
       var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
       return '<div class="pos-cart-row">'
         + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
@@ -340,102 +555,13 @@ window.LedgerFlow = window.LedgerFlow || {};
         + '</div>';
     }).join("");
 
-    if (cart.length > maxVisible) {
-      showAllBtn = '<button type="button" class="pos-show-all-btn" data-action="show-all" data-index="0">Show All Items (' + cart.length + ')</button>';
-    }
-
-    container.innerHTML = '<div class="pos-cart-table">'
+    var tableHtml = '<div class="pos-cart-table">'
       + '<div class="pos-cart-header"><span>Product</span><span style="text-align:center">Qty</span><span style="text-align:right">Amount</span><span></span></div>'
       + rows
-      + '</div>'
-      + showAllBtn;
-  }
-
-  function showAllItemsModal(app) {
-    var existing = document.getElementById("pos-all-items-modal");
-    var modal;
-
-    if (existing) existing.remove();
-
-    modal = document.createElement("div");
-    modal.id = "pos-all-items-modal";
-    modal.className = "pos-modal-overlay";
-    modal.innerHTML = '<div class="pos-modal-sheet">'
-      + '<div class="pos-modal-header"><span class="pos-modal-title">All Cart Items</span><button type="button" class="pos-modal-close" id="pos-all-items-close">&times;</button></div>'
-      + '<div id="pos-all-items-list" class="pos-all-items-list"></div>'
       + '</div>';
-    document.body.appendChild(modal);
-    requestAnimationFrame(function () { modal.classList.add("is-open"); });
-    modal.querySelector("#pos-all-items-close").addEventListener("click", function () { closeModal(modal); });
-    modal.addEventListener("click", function (event) { if (event.target === modal) closeModal(modal); });
-    renderAllItemsList(app);
-  }
 
-  function closeModal(modal) {
-    modal.classList.remove("is-open");
-    setTimeout(function () {
-      if (modal.parentNode) {
-        modal.parentNode.removeChild(modal);
-      }
-    }, 280);
-  }
-
-  function renderAllItemsList(app) {
-    var listEl = document.getElementById("pos-all-items-list");
-    var cart = app.quickBillCart || [];
-
-    if (!listEl) return;
-    if (!cart.length) {
-      listEl.innerHTML = '<div class="pos-cart-empty">Cart is empty.</div>';
-      return;
-    }
-
-    listEl.innerHTML = cart.map(function (item, index) {
-      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
-      return '<div class="pos-cart-row">'
-        + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
-        + '<div class="pos-cart-row__qty">'
-        + '<button type="button" class="pos-qty-btn" data-action="modal-dec" data-index="' + index + '">−</button>'
-        + '<span class="pos-qty-value">' + item.quantity + '</span>'
-        + '<button type="button" class="pos-qty-btn" data-action="modal-inc" data-index="' + index + '">+</button>'
-        + '</div>'
-        + '<div class="pos-cart-row__amount">' + utils.formatCurrency(lineTotal) + '</div>'
-        + '<button type="button" class="pos-remove-btn" data-action="modal-remove" data-index="' + index + '">×</button>'
-        + '</div>';
-    }).join("");
-
-    listEl.onclick = function (event) {
-      var btn = event.target.closest("[data-action]");
-      var idx;
-
-      if (!btn) return;
-
-      idx = parseInt(btn.dataset.index, 10);
-      if (Number.isNaN(idx) || idx < 0 || idx >= cart.length) return;
-
-      if (btn.dataset.action === "modal-remove") {
-        cart.splice(idx, 1);
-      } else if (btn.dataset.action === "modal-inc") {
-        cart[idx].quantity += 1;
-        cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
-      } else if (btn.dataset.action === "modal-dec") {
-        if (cart[idx].quantity > 1) {
-          cart[idx].quantity -= 1;
-          cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
-        } else {
-          cart.splice(idx, 1);
-        }
-      }
-
-      renderAllItemsList(app);
-      renderQuickBillCart(app);
-    };
-  }
-
-  function syncAllItemsModal(app) {
-    if (document.getElementById("pos-all-items-modal")) {
-      renderAllItemsList(app);
-    }
+    if (containerWeb) containerWeb.innerHTML = tableHtml;
+    if (containerPwa) containerPwa.innerHTML = tableHtml;
   }
 
   function showUpiModal(app) {
@@ -476,6 +602,7 @@ window.LedgerFlow = window.LedgerFlow || {};
     modal.innerHTML = '<div class="pos-modal-sheet pos-upi-sheet">'
       + '<div class="pos-modal-header"><span class="pos-modal-title">UPI QR Payment</span><button type="button" class="pos-modal-close" id="pos-upi-close">&times;</button></div>'
       + '<div class="pos-upi-amount">' + utils.formatCurrency(totals.grandTotal) + '</div>'
+      + '<div style="text-align:center;font-size:0.78rem;color:var(--muted);margin-top:-8px;margin-bottom:8px;">incl. GST</div>' // Fix 7
       + '<div class="pos-upi-qr-area">' + qrContent + '</div>'
       + '<p class="pos-upi-hint">Ask customer to scan this QR with any UPI app</p>'
       + '<button type="button" class="btn-received-payment" id="pos-upi-received">I Received Payment</button>'
@@ -571,22 +698,42 @@ window.LedgerFlow = window.LedgerFlow || {};
     showSuccessOverlay(amountStr, paymentMethod, function () {
       app.quickBillCart = [];
       renderQuickBillCart(app);
+      
+      // Auto-return to camera view if in PWA
+      var cartView = document.getElementById("qb-cart-view");
+      var cameraView = document.getElementById("qb-camera-view");
+      if (cartView && cameraView && !cartView.hidden) {
+        cartView.hidden = true;
+        cameraView.hidden = false;
+      }
+      
       app.renderAll();
     });
   }
 
   function setQuickBillStatus(message, color) {
-    var statusEl = document.getElementById("camera-reader-status");
-    if (!statusEl) return;
-    statusEl.textContent = message || "";
-    statusEl.style.color = color || "";
+    // Attempt to set on both if they exist
+    var isPWA = window.matchMedia('(display-mode: standalone)').matches || window.innerWidth <= 768;
+    var statusEl = document.getElementById("camera-reader-status-" + (isPWA ? "pwa" : "web"));
+    if (statusEl) {
+      statusEl.textContent = message || "";
+      statusEl.style.color = color || "";
+    }
+  }
+  
+  function closeModal(modal) {
+    modal.classList.remove("is-open");
+    setTimeout(function () {
+      if (modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+      }
+    }, 280);
   }
 
   function getSalesHelpers() {
     if (!ns.modules.sales || !ns.modules.sales.helpers) {
       throw new Error("Sales helpers are unavailable for Quick Bill.");
     }
-
     return ns.modules.sales.helpers;
   }
 

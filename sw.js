@@ -1,4 +1,4 @@
-const CACHE_NAME = "unidex-erp-v10";
+const CACHE_NAME = "unidex-erp-v18";
 const ASSETS = [
   "./",
   "./index.html",
@@ -21,7 +21,7 @@ const ASSETS = [
   "./pwa/icons/icon-192.png",
   "./pwa/icons/icon-512.png",
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
-  "https://unpkg.com/html5-qrcode",
+  "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"
 ];
 

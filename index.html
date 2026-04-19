@@ -319,7 +319,9 @@
           </section>
 
           <section id="quickbill-module-screen" class="module-screen" data-module="quickbill">
-            <section id="quickbill-module-view" class="quickbill-module-view">
+            
+            <!-- WEB VIEW (Original Form) -->
+            <section id="qb-web-view" class="quickbill-module-view">
               <article class="panel module-card">
                 <div class="panel-head">
                   <div>
@@ -332,35 +334,106 @@
                   <label class="field-span">
                     <span>Scan or enter barcode</span>
                     <div class="customer-search">
-                      <input id="quick-barcode-input" name="quickBarcode" type="text" placeholder="Scan barcode or type product name" autocomplete="off">
-                      <div id="quick-barcode-suggestions" class="customer-suggestions" hidden></div>
+                      <input id="quick-barcode-input-web" name="quickBarcode" type="text" placeholder="Scan barcode or type product name" autocomplete="off">
+                      <div id="quick-barcode-suggestions-web" class="customer-suggestions" hidden></div>
                     </div>
                   </label>
 
                   <div class="button-row quick-bill-tools">
-                    <button id="start-camera-scan" class="button button--secondary pos-header-btn" type="button">Camera</button>
+                    <button id="start-camera-scan-web" class="button button--secondary pos-header-btn" type="button">Camera</button>
                   </div>
 
-                  <p id="camera-reader-status" class="form-message field-span" aria-live="polite"></p>
-                  <div id="camera-reader" class="quick-bill-camera-reader" style="display:none;"></div>
+                  <p id="camera-reader-status-web" class="form-message field-span" aria-live="polite"></p>
+                  <div id="camera-reader-web" class="quick-bill-camera-reader" style="display:none;"></div>
 
-                  <div id="quick-bill-cart-container"></div>
+                  <div id="quick-bill-cart-container-web"></div>
 
                   <div class="quick-bill-total-bar">
                     <div class="quick-bill-total-display">
                       <span class="quick-bill-total-label">Total</span>
-                      <strong id="quick-bill-total" class="quick-bill-total-amount">&#8377;0.00</strong>
-                      <span id="quick-bill-item-count" class="quick-bill-item-count"></span>
+                      <strong id="quick-bill-total-web" class="quick-bill-total-amount">&#8377;0.00</strong>
+                      <span id="quick-bill-item-count-web" class="quick-bill-item-count"></span>
                     </div>
 
                     <div class="quick-bill-pay-buttons">
-                      <button type="button" id="save-quick-bill-cash" class="btn-cash-paid">Cash Paid</button>
-                      <button type="button" id="save-quick-bill-upi" class="btn-upi-qr">UPI QR</button>
+                      <button type="button" id="save-quick-bill-cash-web" class="btn-cash-paid">Cash Paid</button>
+                      <button type="button" id="save-quick-bill-upi-web" class="btn-upi-qr">UPI QR</button>
                     </div>
                   </div>
                 </div>
               </article>
             </section>
+
+            <!-- PWA VIEW (Camera First) -->
+            <div id="qb-pwa-container" class="qb-container" hidden>
+              <!-- CAMERA VIEW -->
+              <section id="qb-camera-view" class="qb-camera-view">
+                <p id="camera-reader-status-pwa" aria-live="polite" style="position: absolute; top: 20px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 1.2rem; z-index: 100; text-shadow: 0 1px 4px rgba(0,0,0,0.8); pointer-events: none;"></p>
+                <div id="camera-reader-pwa" class="quick-bill-camera-reader"></div>
+                
+                <button id="qb-manual-search-fab" class="qb-fab" aria-label="Manual Search">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </button>
+
+                <div class="qb-camera-bottom-bar">
+                  <div id="qb-empty-state-msg" class="qb-empty-state-msg">No items yet • Scan to begin</div>
+                  <div class="qb-bottom-bar-content" style="display: none;">
+                    <div class="qb-bottom-bar-left">
+                      <span id="qb-camera-item-count" class="qb-item-count">Items: 0</span>
+                    </div>
+                    <div class="qb-bottom-bar-center">
+                      <strong id="qb-camera-total" class="qb-total-amount">₹0.00</strong>
+                    </div>
+                    <div class="qb-bottom-bar-right">
+                      <button id="qb-view-cart-btn" class="qb-view-cart-btn">View Cart</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- CART VIEW -->
+              <section id="qb-cart-view" class="qb-cart-view" hidden>
+                <div class="qb-cart-header">
+                  <button id="qb-back-to-scan-btn" class="qb-back-btn" aria-label="Back">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                  </button>
+                </div>
+                
+                <div id="quick-bill-cart-container-pwa" class="qb-cart-container"></div>
+                
+                <div class="qb-cart-footer">
+                  <div class="qb-cart-total-row">
+                    <span>Total</span>
+                    <strong id="quick-bill-total-pwa" class="quick-bill-total-amount">₹0.00</strong>
+                    <span id="quick-bill-item-count-pwa" class="quick-bill-item-count" hidden></span>
+                  </div>
+                  <div class="quick-bill-pay-buttons">
+                    <button type="button" id="save-quick-bill-cash-pwa" class="btn-cash-paid">Cash Paid</button>
+                    <button type="button" id="save-quick-bill-upi-pwa" class="btn-upi-qr">UPI QR</button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- MANUAL SEARCH BOTTOM SHEET -->
+              <div id="qb-manual-search-sheet" class="qb-bottom-sheet" hidden>
+                <div class="qb-sheet-overlay"></div>
+                <div class="qb-sheet-container">
+                  <div class="qb-sheet-handle"></div>
+                  <div class="qb-sheet-header">
+                    <h3>Manual Search</h3>
+                    <button id="qb-close-sheet-btn" class="qb-close-btn">&times;</button>
+                  </div>
+                  <div class="qb-sheet-content app-form">
+                    <label class="field-span">
+                      <div class="customer-search">
+                        <input id="quick-barcode-input-pwa" name="quickBarcode" type="text" placeholder="Scan barcode or type product name" autocomplete="off">
+                        <div id="quick-barcode-suggestions-pwa" class="customer-suggestions" hidden></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           <section class="module-screen" data-module="sales">
@@ -744,7 +817,7 @@
   <script src="js/modules/sales-module.js"></script>
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js" type="text/javascript"></script>
   <script src="erp.js"></script>
 

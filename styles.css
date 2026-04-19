@@ -606,6 +606,10 @@ body.sidebar-collapsed .workspace-shell {
   display: grid;
 }
 
+.quickbill-module-view {
+  display: block;
+}
+
 .content-grid--two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1097,6 +1101,24 @@ body.sidebar-collapsed .workspace-shell {
     gap: 16px;
   }
 
+  .workspace-toolbar {
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .module-menu {
+    gap: 8px;
+  }
+
+  .module-menu__button {
+    padding: 9px 13px;
+    font-size: 0.9rem;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
   .feature-rail {
     position: static;
     top: auto;
@@ -1127,6 +1149,34 @@ body.sidebar-collapsed .workspace-shell {
   .feature-rail.is-collapsed .feature-button {
     min-height: 64px;
     padding: 12px 6px;
+  }
+
+  body.quickbill-mobile-active .site-shell {
+    width: 100%;
+    padding: 0 0 88px;
+  }
+
+  body.quickbill-mobile-active .site-header,
+  body.quickbill-mobile-active .feature-rail,
+  body.quickbill-mobile-active .workspace-toolbar {
+    display: none !important;
+  }
+
+  body.quickbill-mobile-active .workspace-shell {
+    gap: 0;
+  }
+
+  body.quickbill-mobile-active .workspace-main,
+  body.quickbill-mobile-active .workspace-content,
+  body.quickbill-mobile-active .module-screen[data-module="quickbill"].is-active {
+    min-height: calc(100vh - 84px);
+  }
+
+  body.quickbill-mobile-active #quickbill-module-screen .panel {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .dashboard-summary-grid,
@@ -1756,6 +1806,20 @@ body.sidebar-collapsed .workspace-shell {
   flex-wrap: wrap;
 }
 
+.quick-bill-tools {
+  justify-content: flex-start;
+}
+
+.quick-bill-camera-reader {
+  width: 100%;
+  min-height: 280px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(86, 190, 255, 0.06);
+  margin-top: 8px;
+}
+
 /* UPI QR button */
 .btn-upi-qr {
   padding: 14px 22px;
@@ -2256,6 +2320,497 @@ body.sidebar-collapsed .workspace-shell {
 /* Extend totals grid to 6 columns when balance-due cell is visible */
 #invoice-tax-summary:has(#invoice-balance-due-cell:not([hidden])) {
   grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+/* ===================================================
+   Quick Bill PWA Scanner
+   =================================================== */
+
+body.quick-bill-focus .site-header,
+body.quick-bill-focus .feature-rail,
+body.quick-bill-focus .workspace-toolbar,
+body.quick-bill-focus .pwa-bottom-nav {
+  display: none !important;
+}
+
+body.quick-bill-toolbar-hidden .workspace-toolbar {
+  display: none !important;
+}
+
+body.quick-bill-focus .site-shell {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body.quick-bill-focus .workspace-shell,
+body.quick-bill-focus .workspace-main,
+body.quick-bill-focus .workspace-content,
+body.quick-bill-focus .module-screen.is-active,
+body.quick-bill-focus #quickbill-module-view {
+  display: block;
+  min-height: 100vh;
+  margin: 0;
+}
+
+body.quick-bill-focus .workspace-shell {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.quick-bill-pwa {
+  position: relative;
+  min-height: 100vh;
+  background: #020406;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.quick-bill-pwa__camera {
+  position: relative;
+  min-height: 82vh;
+  background:
+    radial-gradient(circle at top, rgba(86, 190, 255, 0.18), transparent 30%),
+    #020406;
+}
+
+.quick-bill-video,
+.quick-bill-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quick-bill-canvas {
+  display: none;
+}
+
+.quick-bill-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  padding: 28px 20px 160px;
+  background:
+    linear-gradient(180deg, rgba(2, 4, 6, 0.52) 0%, rgba(2, 4, 6, 0.08) 28%, rgba(2, 4, 6, 0.08) 72%, rgba(2, 4, 6, 0.68) 100%);
+}
+
+.quick-bill-overlay__frame {
+  width: min(78vw, 360px);
+  height: min(32vw, 160px);
+  border: 2px solid rgba(86, 190, 255, 0.92);
+  border-radius: 24px;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.22),
+    0 0 34px rgba(86, 190, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  position: relative;
+}
+
+.quick-bill-overlay__frame::before,
+.quick-bill-overlay__frame::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(86, 190, 255, 0.9), transparent);
+}
+
+.quick-bill-overlay__frame::before {
+  top: 18%;
+}
+
+.quick-bill-overlay__frame::after {
+  bottom: 18%;
+}
+
+.quick-bill-overlay__copy {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+}
+
+.quick-bill-overlay__copy strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.quick-bill-overlay__copy span {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.quick-bill-status {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  padding: 10px 16px;
+  border: 1px solid rgba(86, 190, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(3, 7, 12, 0.8);
+  backdrop-filter: blur(14px);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.quick-bill-toast {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 72px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 30px rgba(22, 163, 74, 0.28);
+}
+
+.quick-bill-camera-fab {
+  position: absolute;
+  right: 20px;
+  bottom: calc(15vh + env(safe-area-inset-bottom, 0px) + 28px);
+  z-index: 3;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: linear-gradient(135deg, #56beff, #2aa7ff);
+  color: #ffffff;
+  box-shadow: 0 18px 34px rgba(42, 167, 255, 0.28);
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.quick-bill-camera-fab:active {
+  transform: scale(0.97);
+}
+
+.quick-bill-pwa__bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  gap: 12px;
+  min-height: 18vh;
+  padding:
+    12px 14px
+    calc(env(safe-area-inset-bottom, 0px) + 12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(3, 5, 8, 0.76) 0%, rgba(3, 5, 8, 0.94) 100%);
+  backdrop-filter: blur(18px);
+}
+
+.quick-bill-cart-preview {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.quick-bill-cart-preview::-webkit-scrollbar {
+  display: none;
+}
+
+.quick-bill-cart-chip,
+.quick-bill-cart-empty {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.83rem;
+}
+
+.quick-bill-cart-chip strong {
+  font-weight: 700;
+}
+
+.quick-bill-cart-chip span,
+.quick-bill-cart-empty {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.quick-bill-bottom-bar {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.7fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.quick-bill-bottom-bar__items {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.quick-bill-bottom-bar__total {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+
+.quick-bill-bottom-bar__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.quick-bill-bottom-bar__amount {
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.quick-bill-bottom-bar__action {
+  border: none;
+  border-radius: 18px;
+  padding: 14px 18px;
+  min-width: 120px;
+  background: linear-gradient(135deg, #56beff, #2aa7ff);
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.quick-bill-modal[hidden] {
+  display: none;
+}
+
+.quick-bill-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  align-items: end;
+}
+
+.quick-bill-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.quick-bill-modal__sheet {
+  position: relative;
+  z-index: 1;
+  max-height: min(82vh, 760px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0;
+  border-radius: 28px 28px 0 0;
+  background: #090d11;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
+  overflow: hidden;
+  box-shadow: 0 -30px 80px rgba(0, 0, 0, 0.42);
+}
+
+.quick-bill-modal__header,
+.quick-bill-modal__footer {
+  padding: 18px 18px 16px;
+}
+
+.quick-bill-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-bill-modal__header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.quick-bill-modal__header p {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.quick-bill-modal__close {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.quick-bill-modal__list {
+  overflow-y: auto;
+  padding: 12px 18px 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.quick-bill-modal__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-bill-modal__name {
+  display: grid;
+  gap: 4px;
+}
+
+.quick-bill-modal__name strong {
+  font-size: 0.92rem;
+}
+
+.quick-bill-modal__name span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.78rem;
+}
+
+.quick-bill-modal__qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-bill-modal__qty button,
+.quick-bill-modal__remove {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.quick-bill-modal__remove {
+  color: #ff9d9d;
+}
+
+.quick-bill-modal__qty span {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.quick-bill-modal__price {
+  text-align: right;
+}
+
+.quick-bill-modal__price strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.quick-bill-modal__price span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.76rem;
+}
+
+.quick-bill-modal__footer {
+  display: grid;
+  gap: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.quick-bill-modal__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quick-bill-modal__summary span {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.quick-bill-modal__summary strong {
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.quick-bill-modal__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.quick-bill-modal .btn-cash-paid,
+.quick-bill-modal .btn-upi-qr {
+  width: 100%;
+  min-height: 56px;
+}
+
+@media (max-width: 860px) {
+  .quick-bill-pwa__camera {
+    min-height: 80vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .quick-bill-overlay__frame {
+    width: min(84vw, 330px);
+    height: min(38vw, 150px);
+  }
+
+  .quick-bill-bottom-bar {
+    grid-template-columns: minmax(64px, 0.7fr) minmax(0, 1fr) auto;
+  }
+
+  .quick-bill-bottom-bar__action {
+    min-width: 108px;
+    padding: 13px 14px;
+    font-size: 0.86rem;
+  }
+
+  .quick-bill-modal__actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 

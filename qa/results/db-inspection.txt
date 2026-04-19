@@ -1,0 +1,27 @@
+﻿mysql.exe : mysql: [Warning] Using a password on the command line interface can be insecure.
+At line:2 char:11
++ $output = & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' - ...
++           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (mysql: [Warning...an be insecure.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Tables_in_unidex_customer_db
+customers
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	auto_increment
+name	varchar(255)	NO		NULL	
+mobile	varchar(10)	NO	UNI	NULL	
+customer_type	enum('Individual','Business')	NO		Individual	
+company_name	varchar(255)	YES		NULL	
+address	text	YES		NULL	
+gst_number	varchar(15)	YES		NULL	
+opening_balance	decimal(12,2)	NO		0.00	
+credit_limit	decimal(12,2)	YES		NULL	
+email	varchar(255)	YES		NULL	
+city	varchar(100)	YES		NULL	
+state	varchar(100)	YES		NULL	
+pincode	varchar(6)	YES		NULL	
+created_at	timestamp	NO		CURRENT_TIMESTAMP	DEFAULT_GENERATED
+customer_count
+0
+

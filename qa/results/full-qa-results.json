@@ -1,0 +1,274 @@
+{
+  "startedAt": "2026-04-16T17:58:52.162Z",
+  "environment": {
+    "appUrl": "http://127.0.0.1:8080",
+    "apiBase": "http://127.0.0.1:4000"
+  },
+  "api": [
+    {
+      "name": "GET /health returns success",
+      "status": "passed",
+      "detail": {
+        "success": true,
+        "message": "Customer module backend is running"
+      }
+    },
+    {
+      "name": "GET /customers returns array",
+      "status": "passed",
+      "detail": {
+        "count": 0
+      }
+    },
+    {
+      "name": "POST /customers creates valid customer",
+      "status": "passed",
+      "detail": {
+        "id": 4,
+        "name": "QA Customer 1776362333285",
+        "mobile": "9362333285",
+        "customer_type": "Business",
+        "company_name": "QA Traders",
+        "address": "123 Test Street",
+        "gst_number": "27ABCDE1234F1Z5",
+        "opening_balance": "100.00",
+        "credit_limit": "5000.00",
+        "email": "qa.customer@example.com",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411001",
+        "created_at": "2026-04-16T17:58:53.000Z",
+        "customer_name": "QA Customer 1776362333285",
+        "phone": "9362333285",
+        "gstin": "27ABCDE1234F1Z5",
+        "state_name": "Maharashtra",
+        "postal_code": "411001"
+      }
+    },
+    {
+      "name": "POST /customers rejects duplicate mobile",
+      "status": "passed",
+      "detail": {
+        "success": false,
+        "message": "Customer with this mobile number already exists"
+      }
+    },
+    {
+      "name": "POST /customers validates invalid mobile",
+      "status": "passed",
+      "detail": {
+        "success": false,
+        "message": "Validation failed",
+        "errors": [
+          "Mobile number must be a valid 10-digit Indian mobile number"
+        ]
+      }
+    },
+    {
+      "name": "POST /customers validates invalid GST",
+      "status": "passed",
+      "detail": {
+        "success": false,
+        "message": "Validation failed",
+        "errors": [
+          "GST number must be a valid Indian GST format"
+        ]
+      }
+    },
+    {
+      "name": "GET /customers/:id fetches created customer",
+      "status": "passed",
+      "detail": {
+        "id": 4,
+        "name": "QA Customer 1776362333285",
+        "mobile": "9362333285",
+        "customer_type": "Business",
+        "company_name": "QA Traders",
+        "address": "123 Test Street",
+        "gst_number": "27ABCDE1234F1Z5",
+        "opening_balance": "100.00",
+        "credit_limit": "5000.00",
+        "email": "qa.customer@example.com",
+        "city": "Pune",
+        "state": "Maharashtra",
+        "pincode": "411001",
+        "created_at": "2026-04-16T17:58:53.000Z",
+        "customer_name": "QA Customer 1776362333285",
+        "phone": "9362333285",
+        "gstin": "27ABCDE1234F1Z5",
+        "state_name": "Maharashtra",
+        "postal_code": "411001"
+      }
+    },
+    {
+      "name": "PUT /customers/:id updates customer",
+      "status": "passed",
+      "detail": {
+        "id": 4,
+        "name": "QA Customer 1776362333285",
+        "mobile": "9362333285",
+        "customer_type": "Business",
+        "company_name": "QA Traders",
+        "address": "123 Test Street",
+        "gst_number": "27ABCDE1234F1Z5",
+        "opening_balance": "100.00",
+        "credit_limit": "6500.00",
+        "email": "qa.customer@example.com",
+        "city": "Mumbai",
+        "state": "Maharashtra",
+        "pincode": "411001",
+        "created_at": "2026-04-16T17:58:53.000Z",
+        "customer_name": "QA Customer 1776362333285",
+        "phone": "9362333285",
+        "gstin": "27ABCDE1234F1Z5",
+        "state_name": "Maharashtra",
+        "postal_code": "411001"
+      }
+    },
+    {
+      "name": "GET /customers/:id validates bad id",
+      "status": "passed",
+      "detail": {
+        "success": false,
+        "message": "Customer id must be a valid positive integer"
+      }
+    },
+    {
+      "name": "DELETE /customers/:id deletes customer",
+      "status": "passed",
+      "detail": {
+        "success": true,
+        "message": "Customer deleted successfully"
+      }
+    },
+    {
+      "name": "GET /customers/:id returns 404 after delete",
+      "status": "passed",
+      "detail": {
+        "success": false,
+        "message": "Customer not found"
+      }
+    }
+  ],
+  "ui": [
+    {
+      "name": "Dashboard loads with top widgets",
+      "status": "passed",
+      "detail": {
+        "activeModule": "dashboard",
+        "widgetCount": 3,
+        "chartExists": true
+      }
+    },
+    {
+      "name": "Sales module opens invoice view without blank state",
+      "status": "passed",
+      "detail": {
+        "activeModule": "sales",
+        "activeScreen": "sales",
+        "invoiceVisible": true,
+        "toolbarVisible": true
+      }
+    },
+    {
+      "name": "Quick Bill module opens as standalone and hides toolbar",
+      "status": "passed",
+      "detail": {
+        "activeModule": "quickbill",
+        "activeScreen": "quickbill",
+        "toolbarDisplay": "none",
+        "quickBillInputExists": true
+      }
+    },
+    {
+      "name": "Products module renders add-product form",
+      "status": "passed",
+      "detail": {
+        "activeModule": "products",
+        "productForm": true,
+        "inventoryPanel": true
+      }
+    },
+    {
+      "name": "Products module adds inventory item",
+      "status": "passed",
+      "detail": {
+        "created": true,
+        "stock": 12,
+        "inventoryContainsProduct": true
+      }
+    },
+    {
+      "name": "Quick Bill adds scanned product to cart",
+      "status": "passed",
+      "detail": {
+        "cartCount": 1,
+        "firstItemName": "QA Product 1776362334312",
+        "totalText": "₹176.41"
+      }
+    },
+    {
+      "name": "Admin module renders company form",
+      "status": "passed",
+      "detail": {
+        "activeModule": "admin",
+        "companyForm": true,
+        "logoInput": true,
+        "signatureInput": true
+      }
+    },
+    {
+      "name": "Sales module saves invoice with typed customer",
+      "status": "passed",
+      "detail": {
+        "beforeCount": 7,
+        "afterCount": 8,
+        "latestInvoiceNumber": "QA-INV-1776362337705",
+        "successMessage": "Invoice QA-INV-1776362337705 saved successfully. You can review it in the preview and history below.",
+        "historyContainsInvoice": true
+      }
+    },
+    {
+      "name": "Mobile dashboard keeps bottom nav visible",
+      "status": "passed",
+      "detail": {
+        "activeModule": "dashboard",
+        "bottomNavVisible": true,
+        "dashboardVisible": true
+      }
+    },
+    {
+      "name": "Mobile SCAN opens Quick Bill and hides toolbar",
+      "status": "passed",
+      "detail": {
+        "activeModule": "quickbill",
+        "quickBillVisible": true,
+        "toolbarDisplay": "none"
+      }
+    },
+    {
+      "name": "Mobile Sales tab opens Sales invoice view",
+      "status": "passed",
+      "detail": {
+        "activeModule": "sales",
+        "salesVisible": true,
+        "invoiceVisible": true,
+        "toolbarVisible": true
+      }
+    }
+  ],
+  "db": {
+    "note": "Customer backend database uses a single simplified customers table. Structural verification was executed outside this script."
+  },
+  "logs": {
+    "backend": {
+      "stdout": "Server running on http://localhost:4000\nNetwork access enabled on http://<your-pc-ip>:4000\n\u001b[0mGET /health \u001b[32m200\u001b[0m 9.245 ms - 63\u001b[0m\n\u001b[0mGET /health \u001b[32m200\u001b[0m 0.402 ms - 63\u001b[0m\n\u001b[0mGET /customers \u001b[32m200\u001b[0m 7.120 ms - 69\u001b[0m\n\u001b[0mPOST /customers \u001b[32m200\u001b[0m 13.019 ms - 567\u001b[0m\n\u001b[0mPOST /customers \u001b[33m400\u001b[0m 1.525 ms - 77\u001b[0m\n\u001b[0mPOST /customers \u001b[33m400\u001b[0m 0.258 ms - 120\u001b[0m\n\u001b[0mPOST /customers \u001b[33m400\u001b[0m 0.210 ms - 105\u001b[0m\n\u001b[0mGET /customers/4 \u001b[32m200\u001b[0m 1.425 ms - 567\u001b[0m\n\u001b[0mPUT /customers/4 \u001b[32m200\u001b[0m 10.138 ms - 569\u001b[0m\n\u001b[0mGET /customers/abc \u001b[33m400\u001b[0m 0.423 ms - 74\u001b[0m\n\u001b[0mDELETE /customers/4 \u001b[32m200\u001b[0m 9.118 ms - 58\u001b[0m\n\u001b[0mGET /customers/4 \u001b[33m404\u001b[0m 1.691 ms - 48\u001b[0m\n",
+      "stderr": ""
+    },
+    "frontend": {
+      "stdout": "Frontend running on http://localhost:8080\n",
+      "stderr": ""
+    }
+  },
+  "finishedAt": "2026-04-16T17:58:59.803Z"
+}

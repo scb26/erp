@@ -43,16 +43,23 @@ window.LedgerFlow = window.LedgerFlow || {};
           { label: "Overview", target: "dashboard-overview" }
         ]
       },
+      quickbill: {
+        title: "Quick Bill",
+        description: "Run fast counter billing with barcode scan or manual product entry.",
+        menuTitle: "Quick Bill",
+        menu: [
+          { label: "Quick Bill", target: "quickbill-module-screen" }
+        ]
+      },
       sales: {
         title: "Sales",
-        description: "Run quick bills, GST invoices, and manage your customer database in one place.",
+        description: "Manage GST invoices, invoice history, and your customer database in one place.",
         menuTitle: "Sales Menu",
         menu: [
-          { label: "Quick Bill", target: "billing-quick-bill-view", view: "quick-bill" },
           { label: "Invoice", target: "billing-invoice-view", view: "invoice" },
           { label: "Invoice History", target: "billing-invoice-history-view", view: "history" },
-          { label: "Add Customer", target: "customer-add" },
-          { label: "Customer List", target: "customer-list-panel" }
+          { label: "Add Customer", target: "customer-add", view: "customer-add" },
+          { label: "Customer List", target: "customer-list-panel", view: "customer-list-panel" }
         ]
       },
       products: {

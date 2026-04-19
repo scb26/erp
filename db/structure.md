@@ -50,4 +50,6 @@ This schema matches the current ERP modules and gives us a clean backend path.
 
 - SQL schema: [schema.sql](/D:/New folder/erp/db/schema.sql)
 - MySQL schema: [schema.mysql.sql](/D:/New folder/erp/db/schema.mysql.sql)
+- Customer schema alignment: [customer-schema-alignment.md](/D:/New folder/erp/db/customer-schema-alignment.md)
+- Visual DB diagram: [unidex-db-diagram.svg](/D:/New folder/erp/db/unidex-db-diagram.svg)
 

@@ -17,6 +17,20 @@ const SELECT_FIELDS = `
   created_at
 `;
 
+function normalizeCustomerRecord(record) {
+  if (!record) {
+    return null;
+  }
+
+  return Object.assign({}, record, {
+    customer_name: record.name,
+    phone: record.mobile,
+    gstin: record.gst_number,
+    state_name: record.state,
+    postal_code: record.pincode
+  });
+}
+
 async function createCustomer(customer) {
   const sql = `
     INSERT INTO customers (
@@ -55,13 +69,14 @@ async function createCustomer(customer) {
 
 async function getAllCustomers() {
   const sql = `SELECT ${SELECT_FIELDS} FROM customers ORDER BY created_at DESC, id DESC`;
-  return query(sql);
+  const rows = await query(sql);
+  return rows.map(normalizeCustomerRecord);
 }
 
 async function getCustomerById(id) {
   const sql = `SELECT ${SELECT_FIELDS} FROM customers WHERE id = ? LIMIT 1`;
   const rows = await query(sql, [id]);
-  return rows[0] || null;
+  return normalizeCustomerRecord(rows[0] || null);
 }
 
 async function getCustomerByMobile(mobile, excludeId = null) {
@@ -76,7 +91,7 @@ async function getCustomerByMobile(mobile, excludeId = null) {
   sql += " LIMIT 1";
 
   const rows = await query(sql, params);
-  return rows[0] || null;
+  return normalizeCustomerRecord(rows[0] || null);
 }
 
 async function updateCustomer(id, updates) {

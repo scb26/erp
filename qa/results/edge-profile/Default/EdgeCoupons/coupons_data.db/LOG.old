@@ -1,0 +1,6 @@
+2026/04/16-23:18:49.728 4670 Reusing MANIFEST D:\New folder\erp\qa\results\edge-profile\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/04/16-23:18:49.731 4670 Recovering log #4
+2026/04/16-23:18:49.731 4670 Reusing old log D:\New folder\erp\qa\results\edge-profile\Default\EdgeCoupons/coupons_data.db/000004.log 
+2026/04/16-23:18:50.095 46ac Level-0 table #8: started
+2026/04/16-23:18:50.103 46ac Level-0 table #8: 682287 bytes OK
+2026/04/16-23:18:50.106 46ac Delete type=0 #4

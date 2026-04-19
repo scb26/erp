@@ -33,14 +33,14 @@ function validateCustomerPayload(req, res, next, isUpdate) {
   validateName(payload, errors, sanitized, isUpdate);
   validateMobile(payload, errors, sanitized, isUpdate);
   validateCustomerType(payload, errors, sanitized, isUpdate);
-  validateOptionalString(payload, "company_name", sanitized);
-  validateOptionalString(payload, "address", sanitized);
+  validateOptionalAlias(payload, ["company_name", "companyName"], "company_name", sanitized);
+  validateAddress(payload, sanitized);
   validateGstNumber(payload, errors, sanitized);
-  validateNumberField(payload, "opening_balance", sanitized, errors, isUpdate, 0);
-  validateNumberField(payload, "credit_limit", sanitized, errors, true, null);
+  validateNumberField(payload, ["opening_balance", "openingBalance"], "opening_balance", sanitized, errors, isUpdate, 0);
+  validateNumberField(payload, ["credit_limit", "creditLimit"], "credit_limit", sanitized, errors, true, null);
   validateEmail(payload, errors, sanitized);
-  validateOptionalString(payload, "city", sanitized);
-  validateOptionalString(payload, "state", sanitized);
+  validateOptionalAlias(payload, ["city"], "city", sanitized);
+  validateOptionalAlias(payload, ["state", "state_name"], "state", sanitized);
   validatePincode(payload, errors, sanitized);
 
   if (isUpdate && !Object.keys(sanitized).length) {
@@ -60,11 +60,13 @@ function validateCustomerPayload(req, res, next, isUpdate) {
 }
 
 function validateName(payload, errors, sanitized, isUpdate) {
-  if (payload.name === undefined && isUpdate) {
+  const rawValue = firstDefined(payload, ["name", "customer_name"]);
+
+  if (rawValue === undefined && isUpdate) {
     return;
   }
 
-  const name = typeof payload.name === "string" ? payload.name.trim() : "";
+  const name = typeof rawValue === "string" ? rawValue.trim() : "";
 
   if (name.length < 2) {
     errors.push("Name is required and must be at least 2 characters");
@@ -75,11 +77,13 @@ function validateName(payload, errors, sanitized, isUpdate) {
 }
 
 function validateMobile(payload, errors, sanitized, isUpdate) {
-  if (payload.mobile === undefined && isUpdate) {
+  const rawValue = firstDefined(payload, ["mobile", "phone"]);
+
+  if (rawValue === undefined && isUpdate) {
     return;
   }
 
-  const mobile = String(payload.mobile || "").trim();
+  const mobile = String(rawValue || "").trim();
 
   if (!MOBILE_REGEX.test(mobile)) {
     errors.push("Mobile number must be a valid 10-digit Indian mobile number");
@@ -90,11 +94,13 @@ function validateMobile(payload, errors, sanitized, isUpdate) {
 }
 
 function validateCustomerType(payload, errors, sanitized, isUpdate) {
-  if (payload.customer_type === undefined && isUpdate) {
+  const rawValue = firstDefined(payload, ["customer_type", "customerType"]);
+
+  if (rawValue === undefined && isUpdate) {
     return;
   }
 
-  const customerType = payload.customer_type || "Individual";
+  const customerType = rawValue || "Individual";
 
   if (!CUSTOMER_TYPES.includes(customerType)) {
     errors.push("Customer type must be either Individual or Business");
@@ -104,21 +110,40 @@ function validateCustomerType(payload, errors, sanitized, isUpdate) {
   sanitized.customer_type = customerType;
 }
 
-function validateOptionalString(payload, key, sanitized) {
-  if (payload[key] === undefined) {
+function validateAddress(payload, sanitized) {
+  const rawAddress = firstDefined(payload, ["address"]);
+
+  if (rawAddress !== undefined) {
+    sanitized.address = cleanOptionalString(rawAddress);
     return;
   }
 
-  const value = String(payload[key] || "").trim();
-  sanitized[key] = value || null;
+  const line1 = cleanOptionalString(firstDefined(payload, ["address_line1"]));
+  const line2 = cleanOptionalString(firstDefined(payload, ["address_line2"]));
+
+  if (line1 !== undefined || line2 !== undefined) {
+    sanitized.address = [line1, line2].filter(Boolean).join(", ") || null;
+  }
+}
+
+function validateOptionalAlias(payload, aliases, targetKey, sanitized) {
+  const rawValue = firstDefined(payload, aliases);
+
+  if (rawValue === undefined) {
+    return;
+  }
+
+  sanitized[targetKey] = cleanOptionalString(rawValue);
 }
 
 function validateGstNumber(payload, errors, sanitized) {
-  if (payload.gst_number === undefined) {
+  const rawValue = firstDefined(payload, ["gst_number", "gstin"]);
+
+  if (rawValue === undefined) {
     return;
   }
 
-  const gstNumber = String(payload.gst_number || "").trim().toUpperCase();
+  const gstNumber = String(rawValue || "").trim().toUpperCase();
 
   if (!gstNumber) {
     sanitized.gst_number = null;
@@ -133,35 +158,39 @@ function validateGstNumber(payload, errors, sanitized) {
   sanitized.gst_number = gstNumber;
 }
 
-function validateNumberField(payload, key, sanitized, errors, isOptional, defaultValue) {
-  if (payload[key] === undefined) {
+function validateNumberField(payload, aliases, targetKey, sanitized, errors, isOptional, defaultValue) {
+  const rawValue = firstDefined(payload, aliases);
+
+  if (rawValue === undefined) {
     if (!isOptional && defaultValue !== null) {
-      sanitized[key] = defaultValue;
+      sanitized[targetKey] = defaultValue;
     }
     return;
   }
 
-  if (payload[key] === null || payload[key] === "") {
-    sanitized[key] = defaultValue;
+  if (rawValue === null || rawValue === "") {
+    sanitized[targetKey] = defaultValue;
     return;
   }
 
-  const numericValue = Number(payload[key]);
+  const numericValue = Number(rawValue);
 
   if (Number.isNaN(numericValue)) {
-    errors.push(`${friendlyFieldName(key)} must be a valid number`);
+    errors.push(friendlyFieldName(targetKey) + " must be a valid number");
     return;
   }
 
-  sanitized[key] = numericValue;
+  sanitized[targetKey] = numericValue;
 }
 
 function validateEmail(payload, errors, sanitized) {
-  if (payload.email === undefined) {
+  const rawValue = firstDefined(payload, ["email"]);
+
+  if (rawValue === undefined) {
     return;
   }
 
-  const email = String(payload.email || "").trim().toLowerCase();
+  const email = String(rawValue || "").trim().toLowerCase();
 
   if (!email) {
     sanitized.email = null;
@@ -177,11 +206,13 @@ function validateEmail(payload, errors, sanitized) {
 }
 
 function validatePincode(payload, errors, sanitized) {
-  if (payload.pincode === undefined) {
+  const rawValue = firstDefined(payload, ["pincode", "postal_code"]);
+
+  if (rawValue === undefined) {
     return;
   }
 
-  const pincode = String(payload.pincode || "").trim();
+  const pincode = String(rawValue || "").trim();
 
   if (!pincode) {
     sanitized.pincode = null;
@@ -194,6 +225,27 @@ function validatePincode(payload, errors, sanitized) {
   }
 
   sanitized.pincode = pincode;
+}
+
+function firstDefined(payload, aliases) {
+  for (let index = 0; index < aliases.length; index += 1) {
+    const key = aliases[index];
+
+    if (payload[key] !== undefined) {
+      return payload[key];
+    }
+  }
+
+  return undefined;
+}
+
+function cleanOptionalString(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const cleanedValue = String(value || "").trim();
+  return cleanedValue || null;
 }
 
 function friendlyFieldName(field) {

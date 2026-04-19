@@ -83,20 +83,25 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     return {
       id: record.id,
-      name: record.name || "",
-      mobile: record.mobile || "",
-      phone: record.mobile || "",
+      name: record.name || record.customer_name || "",
+      mobile: record.mobile || record.phone || "",
+      phone: record.phone || record.mobile || "",
       customerType: record.customer_type || "Individual",
       companyName: record.company_name || "",
       address: record.address || "",
-      gstNumber: record.gst_number || "",
-      gstin: record.gst_number || "",
+      gstNumber: record.gst_number || record.gstin || "",
+      gstin: record.gstin || record.gst_number || "",
       openingBalance: record.opening_balance === null ? 0 : Number(record.opening_balance || 0),
       creditLimit: record.credit_limit === null || record.credit_limit === "" ? null : Number(record.credit_limit),
       email: record.email || "",
       city: record.city || "",
-      state: record.state || "",
-      pincode: record.pincode || "",
+      state: record.state || record.state_name || "",
+      stateName: record.state_name || record.state || "",
+      pincode: record.pincode || record.postal_code || "",
+      postalCode: record.postal_code || record.pincode || "",
+      customerName: record.customer_name || record.name || "",
+      companyId: record.company_id || null,
+      customerCode: record.customer_code || "",
       createdAt: record.created_at || null
     };
   }

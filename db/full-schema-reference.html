@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unidex ERP Full Schema Reference</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18364d;
+      --muted: #58748b;
+      --accent: #0f5b92;
+      --line: #cfe0ee;
+      --soft: #f5faff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: #ffffff;
+      line-height: 1.45;
+    }
+
+    .page {
+      width: min(1080px, calc(100% - 48px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 28px;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+      margin-top: 22px;
+    }
+
+    p {
+      margin: 0 0 10px;
+      color: var(--muted);
+    }
+
+    ul, ol {
+      margin: 0 0 14px 20px;
+      color: var(--ink);
+    }
+
+    li { margin-bottom: 6px; }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--soft);
+      padding: 18px;
+      margin-top: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eaf4fc;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .section-note {
+      font-size: 0.92rem;
+    }
+
+    @media print {
+      .page {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+
+      .card {
+        break-inside: avoid;
+      }
+
+      h2, h3 {
+        break-after: avoid;
+      }
+
+      table {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Unidex ERP Full Schema Reference</h1>
+    <p>This document summarizes the planned full ERP database schema from <code>schema.mysql.sql</code> in a cleaner, business-friendly format.</p>
+
+    <h2>Full Table List</h2>
+
+    <section class="card">
+      <h3><code>roles</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>code</code></td><td><code>VARCHAR(50)</code></td><td>Unique, required</td></tr>
+          <tr><td><code>name</code></td><td><code>VARCHAR(100)</code></td><td>Required</td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>users</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>role_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>roles.id</code></td></tr>
+          <tr><td><code>full_name</code></td><td><code>VARCHAR(150)</code></td><td>Required</td></tr>
+          <tr><td><code>email</code></td><td><code>VARCHAR(190)</code></td><td>Unique, required</td></tr>
+          <tr><td><code>password_hash</code></td><td><code>VARCHAR(255)</code></td><td>Required</td></tr>
+          <tr><td><code>is_active</code></td><td><code>TINYINT(1)</code></td><td>Default <code>1</code></td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td><code>TIMESTAMP</code></td><td>Auto update timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>companies</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>owner_user_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>users.id</code>, nullable</td></tr>
+          <tr><td><code>company_name</code></td><td><code>VARCHAR(200)</code></td><td>Required</td></tr>
+          <tr><td><code>legal_name</code></td><td><code>VARCHAR(200)</code></td><td>Nullable</td></tr>
+          <tr><td><code>gstin</code></td><td><code>VARCHAR(15)</code></td><td>Unique, nullable</td></tr>
+          <tr><td><code>state_name</code></td><td><code>VARCHAR(100)</code></td><td>Required</td></tr>
+          <tr><td><code>address_line1</code></td><td><code>VARCHAR(200)</code></td><td>Nullable</td></tr>
+          <tr><td><code>address_line2</code></td><td><code>VARCHAR(200)</code></td><td>Nullable</td></tr>
+          <tr><td><code>city</code></td><td><code>VARCHAR(100)</code></td><td>Nullable</td></tr>
+          <tr><td><code>postal_code</code></td><td><code>VARCHAR(20)</code></td><td>Nullable</td></tr>
+          <tr><td><code>country_name</code></td><td><code>VARCHAR(100)</code></td><td>Default <code>India</code></td></tr>
+          <tr><td><code>phone</code></td><td><code>VARCHAR(30)</code></td><td>Nullable</td></tr>
+          <tr><td><code>email</code></td><td><code>VARCHAR(190)</code></td><td>Nullable</td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td><code>TIMESTAMP</code></td><td>Auto update timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>customers</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>company_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>companies.id</code></td></tr>
+          <tr><td><code>customer_code</code></td><td><code>VARCHAR(50)</code></td><td>Required</td></tr>
+          <tr><td><code>customer_name</code></td><td><code>VARCHAR(200)</code></td><td>Required</td></tr>
+          <tr><td><code>gstin</code></td><td><code>VARCHAR(15)</code></td><td>Nullable</td></tr>
+          <tr><td><code>state_name</code></td><td><code>VARCHAR(100)</code></td><td>Required</td></tr>
+          <tr><td><code>email</code></td><td><code>VARCHAR(190)</code></td><td>Nullable</td></tr>
+          <tr><td><code>phone</code></td><td><code>VARCHAR(30)</code></td><td>Nullable</td></tr>
+          <tr><td><code>address_line1</code></td><td><code>VARCHAR(200)</code></td><td>Nullable</td></tr>
+          <tr><td><code>address_line2</code></td><td><code>VARCHAR(200)</code></td><td>Nullable</td></tr>
+          <tr><td><code>city</code></td><td><code>VARCHAR(100)</code></td><td>Nullable</td></tr>
+          <tr><td><code>postal_code</code></td><td><code>VARCHAR(20)</code></td><td>Nullable</td></tr>
+          <tr><td><code>country_name</code></td><td><code>VARCHAR(100)</code></td><td>Default <code>India</code></td></tr>
+          <tr><td><code>is_active</code></td><td><code>TINYINT(1)</code></td><td>Default <code>1</code></td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td><code>TIMESTAMP</code></td><td>Auto update timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>products</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>company_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>companies.id</code></td></tr>
+          <tr><td><code>product_code</code></td><td><code>VARCHAR(50)</code></td><td>Required</td></tr>
+          <tr><td><code>product_name</code></td><td><code>VARCHAR(200)</code></td><td>Required</td></tr>
+          <tr><td><code>product_type</code></td><td><code>ENUM('service','product')</code></td><td>Default <code>service</code></td></tr>
+          <tr><td><code>hsn_sac_code</code></td><td><code>VARCHAR(20)</code></td><td>Nullable</td></tr>
+          <tr><td><code>unit_name</code></td><td><code>VARCHAR(30)</code></td><td>Default <code>Nos</code></td></tr>
+          <tr><td><code>default_rate</code></td><td><code>DECIMAL(12,2)</code></td><td>Required</td></tr>
+          <tr><td><code>gst_rate</code></td><td><code>DECIMAL(5,2)</code></td><td>Required</td></tr>
+          <tr><td><code>is_active</code></td><td><code>TINYINT(1)</code></td><td>Default <code>1</code></td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td><code>TIMESTAMP</code></td><td>Auto update timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>invoices</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>company_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>companies.id</code></td></tr>
+          <tr><td><code>customer_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>customers.id</code></td></tr>
+          <tr><td><code>created_by_user_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>users.id</code>, nullable</td></tr>
+          <tr><td><code>invoice_number</code></td><td><code>VARCHAR(50)</code></td><td>Required</td></tr>
+          <tr><td><code>invoice_date</code></td><td><code>DATE</code></td><td>Required</td></tr>
+          <tr><td><code>place_of_supply_state</code></td><td><code>VARCHAR(100)</code></td><td>Required</td></tr>
+          <tr><td><code>supply_type</code></td><td><code>ENUM('intra_state','inter_state')</code></td><td>Required</td></tr>
+          <tr><td><code>notes</code></td><td><code>TEXT</code></td><td>Nullable</td></tr>
+          <tr><td><code>subtotal_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Required</td></tr>
+          <tr><td><code>cgst_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Default <code>0</code></td></tr>
+          <tr><td><code>sgst_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Default <code>0</code></td></tr>
+          <tr><td><code>igst_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Default <code>0</code></td></tr>
+          <tr><td><code>grand_total_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Required</td></tr>
+          <tr><td><code>status</code></td><td><code>ENUM('draft','sent','paid','cancelled')</code></td><td>Default <code>draft</code></td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+          <tr><td><code>updated_at</code></td><td><code>TIMESTAMP</code></td><td>Auto update timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>invoice_items</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>invoice_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>invoices.id</code></td></tr>
+          <tr><td><code>product_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>products.id</code>, nullable</td></tr>
+          <tr><td><code>line_number</code></td><td><code>INT</code></td><td>Required</td></tr>
+          <tr><td><code>item_name</code></td><td><code>VARCHAR(200)</code></td><td>Required</td></tr>
+          <tr><td><code>hsn_sac_code</code></td><td><code>VARCHAR(20)</code></td><td>Nullable</td></tr>
+          <tr><td><code>quantity</code></td><td><code>DECIMAL(12,2)</code></td><td>Required</td></tr>
+          <tr><td><code>unit_rate</code></td><td><code>DECIMAL(12,2)</code></td><td>Required</td></tr>
+          <tr><td><code>gst_rate</code></td><td><code>DECIMAL(5,2)</code></td><td>Required</td></tr>
+          <tr><td><code>taxable_value</code></td><td><code>DECIMAL(14,2)</code></td><td>Required</td></tr>
+          <tr><td><code>line_total_amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Required</td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h3><code>payments</code></h3>
+      <table>
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Primary key, auto increment</td></tr>
+          <tr><td><code>invoice_id</code></td><td><code>BIGINT UNSIGNED</code></td><td>Foreign key to <code>invoices.id</code></td></tr>
+          <tr><td><code>payment_date</code></td><td><code>DATE</code></td><td>Required</td></tr>
+          <tr><td><code>amount</code></td><td><code>DECIMAL(14,2)</code></td><td>Required</td></tr>
+          <tr><td><code>payment_mode</code></td><td><code>VARCHAR(30)</code></td><td>Required</td></tr>
+          <tr><td><code>reference_number</code></td><td><code>VARCHAR(100)</code></td><td>Nullable</td></tr>
+          <tr><td><code>notes</code></td><td><code>TEXT</code></td><td>Nullable</td></tr>
+          <tr><td><code>created_at</code></td><td><code>TIMESTAMP</code></td><td>Default current timestamp</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <h2>Dependency Order</h2>
+    <div class="card">
+      <p>Create these tables in this order:</p>
+      <ol>
+        <li><code>roles</code></li>
+        <li><code>users</code></li>
+        <li><code>companies</code></li>
+        <li><code>customers</code></li>
+        <li><code>products</code></li>
+        <li><code>invoices</code></li>
+        <li><code>invoice_items</code></li>
+        <li><code>payments</code></li>
+      </ol>
+      <p class="section-note">This order works because each table is created only after the tables it references already exist.</p>
+    </div>
+
+    <h2>Practical Development Order</h2>
+    <div class="card">
+      <ol>
+        <li><code>companies</code></li>
+        <li><code>customers</code></li>
+        <li><code>products</code></li>
+        <li><code>invoices</code></li>
+        <li><code>invoice_items</code></li>
+        <li><code>payments</code></li>
+        <li><code>users</code></li>
+        <li><code>roles</code></li>
+      </ol>
+      <p class="section-note">This is the more practical order for current Unidex development because company, customer, product, and billing are the first business modules in use.</p>
+    </div>
+
+    <h2>Module-wise Mapping</h2>
+    <div class="card">
+      <h3>Admin</h3>
+      <ul>
+        <li><code>companies</code></li>
+        <li><code>users</code></li>
+        <li><code>roles</code></li>
+      </ul>
+
+      <h3>Customers</h3>
+      <ul>
+        <li><code>customers</code></li>
+      </ul>
+
+      <h3>Products</h3>
+      <ul>
+        <li><code>products</code></li>
+      </ul>
+
+      <h3>Sales / Billing / Invoice</h3>
+      <ul>
+        <li><code>invoices</code></li>
+        <li><code>invoice_items</code></li>
+        <li><code>payments</code></li>
+      </ul>
+
+      <h3>GST / Tax Logic</h3>
+      <ul>
+        <li><code>companies.state_name</code></li>
+        <li><code>customers.state_name</code></li>
+        <li><code>invoices.supply_type</code></li>
+        <li><code>invoices.cgst_amount</code></li>
+        <li><code>invoices.sgst_amount</code></li>
+        <li><code>invoices.igst_amount</code></li>
+        <li><code>invoice_items.gst_rate</code></li>
+      </ul>
+    </div>
+
+    <h2>Important Note</h2>
+    <div class="card">
+      <p>The current live database still has only the simplified <code>customers</code> table. This full schema is the planned ERP target structure for the complete backend.</p>
+    </div>
+  </main>
+</body>
+</html>

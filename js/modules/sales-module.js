@@ -8,188 +8,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   // Invoice module owns line items, GST calculations, preview rendering, and history.
   function init(app) {
     if (!app.activeBillingView) {
-      app.activeBillingView = "quick-bill";
-    }
-
-    // Independent POS cart - never touches the B2B form
-    if (!app.quickBillCart) {
-      app.quickBillCart = [];
-    }
-
-    var html5QrcodeScanner = null;
-
-    var quickBarcodeInput = document.getElementById("quick-barcode-input");
-    var quickSuggestions = document.getElementById("quick-barcode-suggestions");
-
-    if (quickBarcodeInput) {
-      quickBarcodeInput.addEventListener("input", function() {
-        renderProductSuggestions(app, quickBarcodeInput.value, quickSuggestions);
-      });
-
-      quickBarcodeInput.addEventListener("keydown", function (event) {
-        var items = quickSuggestions.querySelectorAll(".customer-suggestion");
-        var active = quickSuggestions.querySelector(".customer-suggestion.is-active");
-        var activeIdx = Array.prototype.indexOf.call(items, active);
-
-        if (event.key === "Enter") {
-          event.preventDefault();
-          if (active) {
-            scanProduct(app, active.dataset.barcode || active.dataset.productId);
-            quickBarcodeInput.value = "";
-            quickSuggestions.hidden = true;
-          } else {
-            scanProduct(app, quickBarcodeInput.value.trim());
-            quickBarcodeInput.value = "";
-            quickSuggestions.hidden = true;
-          }
-        } else if (event.key === "ArrowDown") {
-          event.preventDefault();
-          if (!items.length) return;
-          if (active) active.classList.remove("is-active");
-          var next = items[(activeIdx + 1) % items.length];
-          next.classList.add("is-active");
-          next.scrollIntoView({ block: "nearest" });
-        } else if (event.key === "ArrowUp") {
-          event.preventDefault();
-          if (!items.length) return;
-          if (active) active.classList.remove("is-active");
-          var prev = items[(activeIdx - 1 + items.length) % items.length];
-          prev.classList.add("is-active");
-          prev.scrollIntoView({ block: "nearest" });
-        } else if (event.key === "Escape") {
-          quickSuggestions.hidden = true;
-        }
-      });
-    }
-
-    if (quickSuggestions) {
-      quickSuggestions.addEventListener("click", function(e) {
-        var btn = e.target.closest(".customer-suggestion");
-        if (!btn) return;
-        scanProduct(app, btn.dataset.barcode || btn.dataset.productId);
-        quickBarcodeInput.value = "";
-        quickSuggestions.hidden = true;
-        quickBarcodeInput.focus();
-      });
-    }
-
-    // Hide suggestions when clicking elsewhere
-    document.addEventListener("click", function(e) {
-      if (quickBarcodeInput && !quickBarcodeInput.contains(e.target) && quickSuggestions && !quickSuggestions.contains(e.target)) {
-        quickSuggestions.hidden = true;
-      }
-    });
-    var saveQuickCashBtn = document.getElementById("save-quick-bill-cash");
-    if (saveQuickCashBtn) {
-      saveQuickCashBtn.addEventListener("click", function() {
-        submitQuickBill(app, "cash");
-      });
-    }
-
-    var saveQuickUpiBtn = document.getElementById("save-quick-bill-upi");
-    if (saveQuickUpiBtn) {
-      saveQuickUpiBtn.addEventListener("click", function() {
-        showUpiModal(app);
-      });
-    }
-
-    var quickCartContainer = document.getElementById("quick-bill-cart-container");
-    if (quickCartContainer) {
-      quickCartContainer.addEventListener("click", function(event) {
-        var btn = event.target.closest("[data-action]");
-        if (!btn) return;
-        var action = btn.dataset.action;
-        var idx = parseInt(btn.dataset.index, 10);
-        if (isNaN(idx) || idx < 0 || idx >= (app.quickBillCart || []).length) return;
-
-        if (action === "remove") {
-          app.quickBillCart.splice(idx, 1);
-        } else if (action === "inc") {
-          app.quickBillCart[idx].quantity += 1;
-          app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
-        } else if (action === "dec") {
-          if (app.quickBillCart[idx].quantity > 1) {
-            app.quickBillCart[idx].quantity -= 1;
-            app.quickBillCart[idx].taxableValue = app.quickBillCart[idx].quantity * app.quickBillCart[idx].rate;
-          } else {
-            app.quickBillCart.splice(idx, 1);
-          }
-        } else if (action === "show-all") {
-          showAllItemsModal(app);
-          return;
-        }
-        renderQuickBillCart(app);
-        syncAllItemsModal(app);
-      });
-    }
-
-    var cameraBtn = document.getElementById("start-camera-scan");
-    if (cameraBtn) {
-      // Debounce map: tracks the timestamp of the last scan for each barcode
-      var lastScanMap = {};
-      var SCAN_DEBOUNCE_MS = 5000; // ignore same barcode for 5 seconds
-
-      cameraBtn.addEventListener("click", function () {
-        var readerEl = document.getElementById("camera-reader");
-        var statusEl = document.getElementById("camera-reader-status");
-        
-        if (readerEl.style.display === "block") {
-           readerEl.style.display = "none";
-           this.textContent = "📷 Camera";
-           if (html5QrcodeScanner) {
-             html5QrcodeScanner.clear();
-           }
-           lastScanMap = {}; // reset debounce on stop
-           return;
-        }
-
-        if (typeof Html5QrcodeScanner !== "undefined") {
-          readerEl.style.display = "block";
-          this.textContent = "🛑 Stop Camera";
-          if (statusEl) statusEl.textContent = "Starting camera...";
-          
-          html5QrcodeScanner = new Html5QrcodeScanner(
-            "camera-reader",
-            { fps: 10, qrbox: {width: 250, height: 250} },
-            false
-          );
-          
-          html5QrcodeScanner.render(function (decodedText) {
-            var now = Date.now();
-            var lastScan = lastScanMap[decodedText] || 0;
-            if (now - lastScan < SCAN_DEBOUNCE_MS) {
-              return; // Same barcode scanned too recently — ignore
-            }
-            lastScanMap[decodedText] = now;
-            scanProduct(app, decodedText);
-            
-            // Haptic/Audio confirmation
-            if (navigator && navigator.vibrate) navigator.vibrate(200);
-            try {
-              var AudioCtx = window.AudioContext || window.webkitAudioContext;
-              if (AudioCtx) {
-                var audioCtx = new AudioCtx();
-                var osc = audioCtx.createOscillator();
-                var gainNode = audioCtx.createGain();
-                osc.type = 'square'; // sharp barcode scanner sound
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1); // 100ms beep
-              }
-            } catch (e) { /* ignore audio errors */ }
-            
-            if (statusEl) {
-              statusEl.innerHTML = '<span style="color: var(--accent);">✔ Scanned!</span>';
-              setTimeout(function() { statusEl.innerHTML = ""; }, 1500);
-            }
-          }, function (error) {});
-        } else {
-          if (statusEl) statusEl.textContent = "Scanner library not loaded. Check internet connection.";
-        }
-      });
+      app.activeBillingView = "invoice";
     }
 
     app.elements.invoiceCustomerNameInput.addEventListener("input", function () {
@@ -289,9 +108,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       app.persist();
       resetForm(app, { keepPreview: true });
       setActiveBillingView(app, "invoice");
-      app.renderAll();
       setMessage(app, "Invoice " + draft.invoiceNumber + " saved successfully. You can review it in the preview and history below.", "success");
-      app.setActiveModule("sales");
     });
 
     app.elements.invoiceHistory.addEventListener("click", function (event) {
@@ -466,9 +283,6 @@ window.LedgerFlow = window.LedgerFlow || {};
     var items = collectLineItems(app);
     var liveTotals = items.length ? calculateTotals(app, resolveCustomer(app) || {}, items) : emptyTotals();
 
-    // Quick Bill cart is driven by its own state, not B2B form
-    renderQuickBillCart(app);
-
     if (!invoice) {
       app.elements.invoicePreview.innerHTML = '<div class="empty-state">Add invoice details to see the preview.</div>';
       updateTotals(app, liveTotals, null);
@@ -477,275 +291,6 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     app.elements.invoicePreview.innerHTML = buildInvoiceMarkup(invoice);
     updateTotals(app, invoice.totals, invoice);
-  }
-
-  function renderQuickBillCart(app) {
-    var cart = app.quickBillCart || [];
-    var container = document.getElementById("quick-bill-cart-container");
-    if (!container) return;
-
-    // Update total display
-    var totalEl = document.getElementById("quick-bill-total");
-    var countEl = document.getElementById("quick-bill-item-count");
-    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
-
-    if (!cart.length) {
-      container.innerHTML = '<div class="pos-cart-empty">Cart is empty — scan a product to begin.</div>';
-      if (totalEl) totalEl.textContent = '\u20b90.00';
-      if (countEl) countEl.textContent = '';
-      return;
-    }
-
-    var totals = calculateTotals(app, defaultCustomer, cart);
-    if (totalEl) totalEl.textContent = utils.formatCurrency(totals.grandTotal);
-    if (countEl) {
-      var totalQty = cart.reduce(function(s, i) { return s + i.quantity; }, 0);
-      countEl.textContent = '(' + totalQty + ' item' + (totalQty !== 1 ? 's' : '') + ')';
-    }
-
-    var MAX_VISIBLE = 4;
-    var visibleCart = cart.slice(0, MAX_VISIBLE);
-
-    var rows = visibleCart.map(function(item, index) {
-      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
-      return '<div class="pos-cart-row">'
-        + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
-        + '<div class="pos-cart-row__qty">'
-        + '<button type="button" class="pos-qty-btn" data-action="dec" data-index="' + index + '" aria-label="Decrease">&#8722;</button>'
-        + '<span class="pos-qty-value">' + item.quantity + '</span>'
-        + '<button type="button" class="pos-qty-btn" data-action="inc" data-index="' + index + '" aria-label="Increase">&#43;</button>'
-        + '</div>'
-        + '<div class="pos-cart-row__amount">' + utils.formatCurrency(lineTotal) + '</div>'
-        + '<button type="button" class="pos-remove-btn" data-action="remove" data-index="' + index + '" aria-label="Remove item">&times;</button>'
-        + '</div>';
-    }).join('');
-
-    var showAllBtn = '';
-    if (cart.length > MAX_VISIBLE) {
-      showAllBtn = '<button type="button" class="pos-show-all-btn" data-action="show-all" data-index="0">'
-        + '&#9776; Show All Items (' + cart.length + ')'
-        + '</button>';
-    }
-
-    container.innerHTML = '<div class="pos-cart-table">'
-      + '<div class="pos-cart-header">'
-      + '<span>Product</span><span style="text-align:center">Qty</span><span style="text-align:right">Amount</span><span></span>'
-      + '</div>'
-      + rows
-      + '</div>'
-      + showAllBtn;
-  }
-
-  function showAllItemsModal(app) {
-    var existing = document.getElementById("pos-all-items-modal");
-    if (existing) existing.remove();
-
-    var modal = document.createElement("div");
-    modal.id = "pos-all-items-modal";
-    modal.className = "pos-modal-overlay";
-    modal.innerHTML = '<div class="pos-modal-sheet">'
-      + '<div class="pos-modal-header">'
-      + '<span class="pos-modal-title">All Cart Items</span>'
-      + '<button type="button" class="pos-modal-close" id="pos-all-items-close">&times;</button>'
-      + '</div>'
-      + '<div id="pos-all-items-list" class="pos-all-items-list"></div>'
-      + '</div>';
-    document.body.appendChild(modal);
-    requestAnimationFrame(function() { modal.classList.add("is-open"); });
-    modal.querySelector("#pos-all-items-close").addEventListener("click", function() { closeModal(modal); });
-    modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(modal); });
-    renderAllItemsList(app);
-  }
-
-  function closeModal(modal) {
-    modal.classList.remove("is-open");
-    setTimeout(function() { if (modal.parentNode) modal.parentNode.removeChild(modal); }, 280);
-  }
-
-  function renderAllItemsList(app) {
-    var listEl = document.getElementById("pos-all-items-list");
-    if (!listEl) return;
-    var cart = app.quickBillCart || [];
-    if (!cart.length) { listEl.innerHTML = '<div class="pos-cart-empty">Cart is empty.</div>'; return; }
-    listEl.innerHTML = cart.map(function(item, index) {
-      var lineTotal = item.taxableValue + (item.taxableValue * item.gstRate / 100);
-      return '<div class="pos-cart-row">'
-        + '<div class="pos-cart-row__name">' + utils.escapeHtml(item.name) + '</div>'
-        + '<div class="pos-cart-row__qty">'
-        + '<button type="button" class="pos-qty-btn modal-qty-btn" data-action="modal-dec" data-index="' + index + '">&#8722;</button>'
-        + '<span class="pos-qty-value">' + item.quantity + '</span>'
-        + '<button type="button" class="pos-qty-btn modal-qty-btn" data-action="modal-inc" data-index="' + index + '">&#43;</button>'
-        + '</div>'
-        + '<div class="pos-cart-row__amount">' + utils.formatCurrency(lineTotal) + '</div>'
-        + '<button type="button" class="pos-remove-btn modal-remove-btn" data-action="modal-remove" data-index="' + index + '">&times;</button>'
-        + '</div>';
-    }).join('');
-    listEl.addEventListener("click", function(e) {
-      var btn = e.target.closest("[data-action]");
-      if (!btn) return;
-      var action = btn.dataset.action;
-      var idx = parseInt(btn.dataset.index, 10);
-      if (isNaN(idx) || idx < 0 || idx >= cart.length) return;
-      if (action === "modal-remove") {
-        cart.splice(idx, 1);
-      } else if (action === "modal-inc") {
-        cart[idx].quantity += 1;
-        cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
-      } else if (action === "modal-dec") {
-        if (cart[idx].quantity > 1) {
-          cart[idx].quantity -= 1;
-          cart[idx].taxableValue = cart[idx].quantity * cart[idx].rate;
-        } else {
-          cart.splice(idx, 1);
-        }
-      }
-      renderAllItemsList(app);
-      renderQuickBillCart(app);
-    }, { once: false });
-  }
-
-  function syncAllItemsModal(app) {
-    var modal = document.getElementById("pos-all-items-modal");
-    if (!modal) return;
-    renderAllItemsList(app);
-  }
-
-  function showUpiModal(app) {
-    var cart = app.quickBillCart || [];
-    if (!cart.length) {
-      var statusEl = document.getElementById("camera-reader-status");
-      if (statusEl) {
-        statusEl.innerHTML = '<span style="color: var(--danger);">Please scan at least one item before charging.</span>';
-        setTimeout(function() { statusEl.innerHTML = ""; }, 3000);
-      }
-      return;
-    }
-    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : '' };
-    var totals = calculateTotals(app, defaultCustomer, cart);
-    var totalStr = utils.formatCurrency(totals.grandTotal);
-
-    var existing = document.getElementById("pos-upi-modal");
-    if (existing) existing.remove();
-
-    var upiId = app.data.company && app.data.company.upiId ? app.data.company.upiId : null;
-    var merchantName = app.data.company && app.data.company.name ? encodeURIComponent(app.data.company.name) : "Unidex";
-    var upiUri = '';
-    var qrContent = '';
-    
-    if (upiId) {
-      upiUri = 'upi://pay?pa=' + encodeURIComponent(upiId) + '&pn=' + merchantName + '&am=' + totals.grandTotal + '&cu=INR';
-      qrContent = '<canvas id="pos-upi-qr-canvas"></canvas>';
-    } else {
-      qrContent = '<div class="pos-upi-qr-placeholder">'
-        + '<svg viewBox="0 0 80 80" fill="none" width="80" height="80"><rect x="4" y="4" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="12" y="12" width="12" height="12" rx="1" fill="currentColor"/><rect x="48" y="4" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="56" y="12" width="12" height="12" rx="1" fill="currentColor"/><rect x="4" y="48" width="28" height="28" rx="3" fill="none" stroke="currentColor" stroke-width="3"/><rect x="12" y="56" width="12" height="12" rx="1" fill="currentColor"/><rect x="48" y="48" width="8" height="8" rx="1" fill="currentColor"/><rect x="62" y="48" width="14" height="8" rx="1" fill="currentColor"/><rect x="48" y="62" width="14" height="8" rx="1" fill="currentColor"/><rect x="68" y="62" width="8" height="14" rx="1" fill="currentColor"/></svg>'
-        + '<p>Configure UPI ID in Settings</p>'
-        + '</div>';
-    }
-
-    var modal = document.createElement("div");
-    modal.id = "pos-upi-modal";
-    modal.className = "pos-modal-overlay";
-    modal.innerHTML = '<div class="pos-modal-sheet pos-upi-sheet">'
-      + '<div class="pos-modal-header">'
-      + '<span class="pos-modal-title">UPI QR Payment</span>'
-      + '<button type="button" class="pos-modal-close" id="pos-upi-close">&times;</button>'
-      + '</div>'
-      + '<div class="pos-upi-amount">' + totalStr + '</div>'
-      + '<div class="pos-upi-qr-area">'
-      + qrContent
-      + '</div>'
-      + '<p class="pos-upi-hint">Ask customer to scan this QR with any UPI app</p>'
-      + '<button type="button" class="btn-received-payment" id="pos-upi-received">&#10003; I Received Payment</button>'
-      + '</div>';
-    document.body.appendChild(modal);
-    requestAnimationFrame(function() { modal.classList.add("is-open"); });
-
-    if (upiId && typeof window.QRious !== 'undefined') {
-      new QRious({
-        element: document.getElementById('pos-upi-qr-canvas'),
-        value: upiUri,
-        size: 200
-      });
-    }
-
-    modal.querySelector("#pos-upi-close").addEventListener("click", function() { closeModal(modal); });
-    modal.addEventListener("click", function(e) { if (e.target === modal) closeModal(modal); });
-    modal.querySelector("#pos-upi-received").addEventListener("click", function() {
-      closeModal(modal);
-      submitQuickBill(app, "upi");
-    });
-  }
-
-  function showSuccessOverlay(amount, paymentMethod, onDone) {
-    var existing = document.getElementById("pos-success-overlay");
-    if (existing) existing.remove();
-
-    var label = paymentMethod === "upi" ? "UPI" : "Cash";
-    var overlay = document.createElement("div");
-    overlay.id = "pos-success-overlay";
-    overlay.className = "pos-success-overlay";
-    overlay.innerHTML = '<div class="pos-success-content">'
-      + '<div class="pos-success-check">&#10003;</div>'
-      + '<div class="pos-success-amount">' + amount + '</div>'
-      + '<div class="pos-success-msg">Received Successfully</div>'
-      + '<div class="pos-success-method">' + label + '</div>'
-      + '</div>';
-    document.body.appendChild(overlay);
-    requestAnimationFrame(function() { overlay.classList.add("is-visible"); });
-    setTimeout(function() {
-      overlay.classList.remove("is-visible");
-      setTimeout(function() {
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-        if (typeof onDone === "function") onDone();
-      }, 320);
-    }, 1800);
-  }
-
-  function submitQuickBill(app, paymentMethod) {
-    var cart = app.quickBillCart || [];
-    if (!cart.length) {
-      var statusEl = document.getElementById("camera-reader-status");
-      if (statusEl) {
-        statusEl.innerHTML = '<span style="color: var(--danger);">Please scan at least one item before charging.</span>';
-        setTimeout(function() { statusEl.innerHTML = ""; }, 3000);
-      }
-      return;
-    }
-
-    var defaultCustomer = {
-      name: "Walk-in Customer",
-      address: "",
-      state: app.data.company && app.data.company.state ? app.data.company.state : "Unknown",
-      mobile: "",
-      email: "",
-      gstNumber: ""
-    };
-
-    var totals = calculateTotals(app, defaultCustomer, cart);
-    var amountStr = utils.formatCurrency(totals.grandTotal);
-
-    var draft = {
-      id: utils.createId("INV"),
-      invoiceType: "tax_invoice",
-      paymentStatus: "paid",
-      invoiceNumber: nextInvoiceNumber(app),
-      invoiceDate: utils.today(),
-      company: utils.clone(app.data.company),
-      customer: defaultCustomer,
-      notes: paymentMethod === 'upi' ? "Automated POS Checkout: Paid via UPI" : "Automated POS Checkout: Cash Paid",
-      items: cart,
-      totals: totals
-    };
-
-    app.data.invoices.unshift(draft);
-    deductStock(app, draft.items);
-    app.persist();
-
-    showSuccessOverlay(amountStr, paymentMethod, function() {
-      app.quickBillCart = [];
-      renderQuickBillCart(app);
-      app.renderAll();
-    });
   }
 
   function collectInvoiceDraft(app, strict) {
@@ -1058,50 +603,6 @@ window.LedgerFlow = window.LedgerFlow || {};
     });
   }
 
-  function scanProduct(app, barcode) {
-    if (!barcode) return;
-    var product = app.data.products.find(function(p) { return p.barcode === barcode || p.id === barcode; });
-    var statusEl = document.getElementById("camera-reader-status");
-
-    if (!product) {
-      if (statusEl) {
-        statusEl.textContent = "\u274c Product not found for barcode: " + barcode;
-        statusEl.style.color = "var(--danger)";
-      }
-      return;
-    }
-
-    if (statusEl) {
-      statusEl.textContent = "\u2705 Added: " + product.name;
-      statusEl.style.color = "var(--success)";
-      setTimeout(function() { statusEl.textContent = ""; }, 2000);
-    }
-
-    // Work purely on the independent quickBillCart array
-    if (!app.quickBillCart) app.quickBillCart = [];
-
-    var existingItem = app.quickBillCart.find(function(item) {
-      return item.productId === String(product.id);
-    });
-
-    if (existingItem) {
-      existingItem.quantity += 1;
-      existingItem.taxableValue = existingItem.quantity * existingItem.rate;
-    } else {
-      app.quickBillCart.push({
-        productId: String(product.id),
-        name: product.name,
-        hsn: product.hsn || "",
-        quantity: 1,
-        rate: parseFloat(product.price) || 0,
-        gstRate: parseFloat(product.gstRate) || 0,
-        taxableValue: parseFloat(product.price) || 0
-      });
-    }
-
-    renderQuickBillCart(app);
-  }
-
   function resolveCustomer(app) {
     var selectedCustomer = getCustomerById(app, app.elements.invoiceCustomerSelect.value);
     var typedName = valueOf("invoice-customer-name");
@@ -1279,30 +780,36 @@ window.LedgerFlow = window.LedgerFlow || {};
 
   function render(app) {
     applyBillingView(app);
-    
-    if (app.activeBillingView === "history") {
-      renderHistory(app);
-    } else if (app.activeBillingView === "invoice") {
+
+    // Keep history hydrated even while the invoice form is active so save feedback
+    // feels immediate when the user switches over to history.
+    renderHistory(app);
+
+    if (app.activeBillingView === "invoice") {
       renderInvoiceForm(app);
     }
-    
-    // Independent Quick Bill components
-    renderQuickBillCart(app);
-    syncPreview(app);
-    
+
     // --- Integrated Customer Rendering ---
     renderCustomerList(app);
     updateInvoiceCustomerOptions(app);
-    
+
     ensureDefaults(app);
     syncLineItemProductOptions(app);
     renderCustomerSuggestions(app);
+    syncPreview(app);
+  }
+
+  // Keep the invoice workspace hydrated without relying on a missing renderer.
+  function renderInvoiceForm(app) {
+    ensureDefaults(app);
+    syncLineItemProductOptions(app);
+    renderCustomerSuggestions(app);
+    syncPreview(app);
   }
 
   function setActiveBillingView(app, viewKey) {
-    // Expand to include customer-related views
     var validViews = ["invoice", "history", "customer-list-panel", "customer-add"];
-    app.activeBillingView = validViews.indexOf(viewKey) !== -1 ? viewKey : "quick-bill";
+    app.activeBillingView = validViews.indexOf(viewKey) !== -1 ? viewKey : "invoice";
     
     applyBillingView(app);
     if (ns.navigation && typeof ns.navigation.renderModuleMenu === "function") {
@@ -1312,24 +819,16 @@ window.LedgerFlow = window.LedgerFlow || {};
   }
 
   function applyBillingView(app) {
-    if (!app.elements.billingViews || !app.elements.billingViews.length) {
+    var salesScreen = document.querySelector('.module-screen[data-module="sales"]');
+    var salesBillingViews = salesScreen ? salesScreen.querySelectorAll(".billing-view") : [];
+
+    if (!salesBillingViews.length) {
       return;
     }
 
-    app.elements.billingViews.forEach(function (view) {
+    salesBillingViews.forEach(function (view) {
       view.classList.toggle("is-active", view.dataset.billingView === app.activeBillingView);
     });
-
-    // --- PWA High-Speed Focus Mode ---
-    // Hide toolbar if in Quick Bill (the SCAN context)
-    var toolbar = document.querySelector(".workspace-toolbar");
-    if (toolbar) {
-      if (app.activeBillingView === "quick-bill") {
-        toolbar.style.display = "none";
-      } else {
-        toolbar.style.display = "grid"; // restore standard grid
-      }
-    }
   }
 
   function valueOf(id) {
@@ -1372,6 +871,19 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     balanceCell.hidden = false;
     balanceValue.textContent = utils.formatCurrency(balanceDue > 0 ? balanceDue : 0);
+  }
+
+  function setMessage(app, message, type) {
+    if (!app.elements.invoiceFormMessage) {
+      return;
+    }
+
+    app.elements.invoiceFormMessage.textContent = message || "";
+    app.elements.invoiceFormMessage.className = "form-message field-span";
+
+    if (type) {
+      app.elements.invoiceFormMessage.classList.add("form-message--" + type);
+    }
   }
 
   function setCustomerMessage(app, message, type) {
@@ -1499,6 +1011,12 @@ window.LedgerFlow = window.LedgerFlow || {};
   ns.modules.sales = {
     init: init,
     render: render,
-    setActiveBillingView: setActiveBillingView
+    setActiveBillingView: setActiveBillingView,
+    helpers: {
+      calculateTotals: calculateTotals,
+      deductStock: deductStock,
+      nextInvoiceNumber: nextInvoiceNumber
+    }
   };
 })(window.LedgerFlow);
+

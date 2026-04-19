@@ -36,6 +36,7 @@ window.LedgerFlow = window.LedgerFlow || {};
 
     app.setActiveModule = function (moduleKey) {
       navigation.setActiveModule(app, moduleKey);
+      app.renderAll();
     };
 
     app.setActiveBillingView = function (viewKey) {
@@ -55,8 +56,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       customerSyncError = await ns.modules.customers.syncFromBackend(app, false);
     }
 
-    app.renderAll();
-    navigation.setActiveModule(app, app.activeModule);
+    app.setActiveModule(app.activeModule);
 
     if (customerSyncError && ns.modules.customers) {
       ns.modules.customers.setMessage(app, customerSyncError, "error");
@@ -69,7 +69,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   function bindGlobalEvents(app) {
     app.elements.featureButtons.forEach(function (button) {
       button.addEventListener("click", function () {
-        navigation.setActiveModule(app, button.dataset.module);
+        app.setActiveModule(button.dataset.module);
       });
     });
 

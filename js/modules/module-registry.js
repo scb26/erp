@@ -7,6 +7,7 @@ window.LedgerFlow = window.LedgerFlow || {};
       ns.modules.admin,
       ns.modules.products,
       ns.modules.dashboard,
+      ns.modules.quickbill,
       ns.modules.sales
     ].filter(Boolean);
   }

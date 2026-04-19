@@ -32,6 +32,10 @@ window.LedgerFlow = window.LedgerFlow || {};
   function setActiveModule(app, moduleKey) {
     app.activeModule = config.MODULES[moduleKey] ? moduleKey : "dashboard";
 
+    // Clear stale Quick Bill focus classes from older flows before toggling the new state.
+    document.body.classList.remove("quick-bill-focus", "quick-bill-toolbar-hidden");
+    document.body.classList.toggle("quickbill-mobile-active", app.activeModule === "quickbill");
+
     app.elements.featureButtons.forEach(function (button) {
       button.classList.toggle("is-active", button.dataset.module === app.activeModule);
     });
@@ -40,10 +44,10 @@ window.LedgerFlow = window.LedgerFlow || {};
       screen.classList.toggle("is-active", screen.dataset.module === app.activeModule);
     });
 
-    // Reset toolbar visibility when switching modules
+    // Keep the toolbar hidden while Quick Bill is the active sales subview.
     var toolbar = document.querySelector(".workspace-toolbar");
     if (toolbar) {
-      toolbar.style.display = "grid"; 
+      toolbar.style.display = app.activeModule === "quickbill" ? "none" : "grid";
     }
 
     if (app.elements.activeModuleTitle) {

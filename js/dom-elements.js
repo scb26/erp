@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   // All DOM lookups are grouped here to keep the bootstrap file focused on behavior.
@@ -95,7 +95,7 @@ window.LedgerFlow = window.LedgerFlow || {};
   ns.dom = {
     collect: collect
   };
-})(window.LedgerFlow);
+})(window.Unidex);
 
 
 

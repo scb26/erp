@@ -1,5 +1,5 @@
 (function () {
-  var THEME_KEY = "ledgerflow-theme";
+  var THEME_KEY = "unidex-theme";
   var toggle = document.getElementById("theme-toggle");
 
   if (!toggle) {

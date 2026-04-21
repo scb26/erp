@@ -437,7 +437,7 @@ async function runUiTests(cdp) {
     const state = await evaluate(
       cdp,
       `(() => ({
-        activeModule: window.LedgerFlow && window.LedgerFlow.app && window.LedgerFlow.app.activeModule,
+        activeModule: window.Unidex && window.Unidex.app && window.Unidex.app.activeModule,
         widgetCount: document.querySelectorAll('#dashboard-overview .dashboard-widget').length,
         chartExists: !!document.getElementById('dashboard-chart')
       }))()`
@@ -458,7 +458,7 @@ async function runUiTests(cdp) {
         const activeScreen = document.querySelector('.module-screen.is-active');
         const invoiceView = document.getElementById('billing-invoice-view');
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           activeScreen: activeScreen && activeScreen.dataset.module,
           invoiceVisible: !!(invoiceView && invoiceView.classList.contains('is-active')),
           toolbarVisible: getComputedStyle(document.querySelector('.workspace-toolbar')).display !== 'none'
@@ -481,7 +481,7 @@ async function runUiTests(cdp) {
         const activeScreen = document.querySelector('.module-screen.is-active');
         const quickBillInput = document.getElementById('quick-barcode-input');
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           activeScreen: activeScreen && activeScreen.dataset.module,
           toolbarDisplay: getComputedStyle(document.querySelector('.workspace-toolbar')).display,
           quickBillInputExists: !!quickBillInput
@@ -502,7 +502,7 @@ async function runUiTests(cdp) {
         const btn = document.querySelector('.feature-button[data-module="products"]');
         btn && btn.click();
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           productForm: !!document.getElementById('product-form'),
           inventoryPanel: !!document.getElementById('product-inventory-list')
         };
@@ -526,7 +526,7 @@ async function runUiTests(cdp) {
         document.getElementById('product-gst').value = ${JSON.stringify(product.gst)};
         document.getElementById('product-stock').value = ${JSON.stringify(product.stock)};
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-        const created = window.LedgerFlow.app.data.products.find((item) => item.barcode === ${JSON.stringify(product.barcode)});
+        const created = window.Unidex.app.data.products.find((item) => item.barcode === ${JSON.stringify(product.barcode)});
         return {
           created: !!created,
           stock: created && created.stock,
@@ -551,7 +551,7 @@ async function runUiTests(cdp) {
         input.value = ${JSON.stringify(product.barcode)};
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        const cart = window.LedgerFlow.app.quickBillCart || [];
+        const cart = window.Unidex.app.quickBillCart || [];
         return {
           cartCount: cart.length,
           firstItemName: cart[0] && cart[0].name,
@@ -572,7 +572,7 @@ async function runUiTests(cdp) {
         const btn = document.querySelector('.feature-button[data-module="admin"]');
         btn && btn.click();
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           companyForm: !!document.getElementById('company-form'),
           logoInput: !!document.getElementById('company-logo'),
           signatureInput: !!document.getElementById('company-signature')
@@ -592,7 +592,7 @@ async function runUiTests(cdp) {
       `(() => {
         const salesBtn = document.querySelector('.feature-button[data-module="sales"]');
         salesBtn && salesBtn.click();
-        const app = window.LedgerFlow.app;
+        const app = window.Unidex.app;
         const beforeCount = app.data.invoices.length;
         const invoiceNumber = 'QA-INV-' + Date.now();
         document.getElementById('invoice-number').value = invoiceNumber;
@@ -633,7 +633,7 @@ async function runUiTests(cdp) {
     const state = await evaluate(
       cdp,
       `(() => ({
-        activeModule: window.LedgerFlow.app.activeModule,
+        activeModule: window.Unidex.app.activeModule,
         bottomNavVisible: getComputedStyle(document.querySelector('.pwa-bottom-nav')).display !== 'none',
         dashboardVisible: !!document.querySelector('.module-screen.is-active[data-module="dashboard"]')
       }))()`
@@ -652,7 +652,7 @@ async function runUiTests(cdp) {
         const scan = document.getElementById('tab-scan');
         scan && scan.click();
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           quickBillVisible: !!document.querySelector('.module-screen.is-active[data-module="quickbill"]'),
           toolbarDisplay: getComputedStyle(document.querySelector('.workspace-toolbar')).display
         };
@@ -673,7 +673,7 @@ async function runUiTests(cdp) {
         salesTab && salesTab.click();
         const invoiceView = document.getElementById('billing-invoice-view');
         return {
-          activeModule: window.LedgerFlow.app.activeModule,
+          activeModule: window.Unidex.app.activeModule,
           salesVisible: !!document.querySelector('.module-screen.is-active[data-module="sales"]'),
           invoiceVisible: !!(invoiceView && invoiceView.classList.contains('is-active')),
           toolbarVisible: getComputedStyle(document.querySelector('.workspace-toolbar')).display !== 'none'

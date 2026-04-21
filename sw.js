@@ -1,4 +1,4 @@
-const CACHE_NAME = "unidex-erp-v18";
+const CACHE_NAME = "unidex-erp-v20";
 const ASSETS = [
   "./",
   "./index.html",
@@ -82,6 +82,18 @@ function isAppShellRequest(request) {
     pathname.endsWith(".webmanifest") ||
     pathname.endsWith("/sw.js")
   );
+}
+
+// 5. Background Sync for Offline Actions
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-invoices') {
+    event.waitUntil(syncInvoices());
+  }
+});
+
+async function syncInvoices() {
+  console.log('[SW] Background Syncing Invoices...');
+  // Logic to read from IndexedDB and POST to server goes here
 }
 
 async function networkFirst(request) {

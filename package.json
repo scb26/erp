@@ -1,12 +1,32 @@
 {
   "name": "unidex-erp",
   "version": "1.0.0",
-  "description": "Unidex ERP - Counter Billing and GST Invoice System",
-  "private": true,
+  "description": "High-performance Retail PWA and Inventory Management System",
+  "main": "static-server.js",
+  "type": "module",
   "scripts": {
-    "start": "npx serve ."
+    "dev": "concurrently \"node static-server.js\" \"python main.py\"",
+    "start": "node static-server.js",
+    "backend": "python main.py",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "erp",
+    "pwa",
+    "pos",
+    "inventory"
+  ],
+  "author": "Unidex",
+  "license": "ISC",
   "dependencies": {
-    "html5-qrcode": "^2.3.8"
+    "express": "^4.18.2",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

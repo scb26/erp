@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var defaultApiBaseUrl = (function () {
@@ -18,15 +18,15 @@ window.LedgerFlow = window.LedgerFlow || {};
   ns.config = {
     API: {
       // Allow manual override, otherwise follow the current host for same-Wi-Fi testing.
-      customerBaseUrl: window.LedgerFlowCustomerApiBaseUrl || defaultApiBaseUrl
+      customerBaseUrl: window.UnidexCustomerApiBaseUrl || defaultApiBaseUrl
     },
     STORAGE_KEYS: {
-      company: "ledgerflow-company",
-      customers: "ledgerflow-customers",
-      products: "ledgerflow-products",
-      invoices: "ledgerflow-invoices",
-      expenses: "ledgerflow-expenses",
-      sidebar: "ledgerflow-sidebar-collapsed"
+      company: "unidex-company",
+      customers: "unidex-customers",
+      products: "unidex-products",
+      invoices: "unidex-invoices",
+      expenses: "unidex-expenses",
+      sidebar: "unidex-sidebar-collapsed"
     },
     STATES: [
       "Andhra Pradesh", "Assam", "Bihar", "Chandigarh", "Chhattisgarh", "Delhi", "Goa",
@@ -82,4 +82,4 @@ window.LedgerFlow = window.LedgerFlow || {};
       }
     }
   };
-})(window.LedgerFlow);
+})(window.Unidex);

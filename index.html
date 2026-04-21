@@ -2,11 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ERP Workspace | Unidex</title>
-  <meta name="description" content="Unidex ERP – Fast counter billing, GST invoices, customer and product management for Indian businesses.">
-  <meta name="theme-color" content="#56beff">
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f12">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Unidex ERP">
@@ -20,7 +17,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="pwa/icons/icon-512.png">
   <script>
     (function () {
-      var key = "ledgerflow-theme";
+      var key = "unidex-theme";
       var stored = localStorage.getItem(key);
       var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.setAttribute("data-theme", stored || (prefersDark ? "dark" : "light"));
@@ -902,7 +899,7 @@
     }
 
     function openSalesBillingView(viewName, isScan) {
-      const app = window.LedgerFlow && window.LedgerFlow.app;
+      const app = window.Unidex && window.Unidex.app;
       const salesScreen = document.querySelector('.module-screen[data-module="sales"]');
       const salesBillingViews = salesScreen ? salesScreen.querySelectorAll('.billing-view') : [];
 
@@ -926,7 +923,7 @@
     // When clicking bottom tabs
     pwaTabButtons.forEach(btn => {
       btn.addEventListener('click', () => {
-        const app = window.LedgerFlow && window.LedgerFlow.app;
+        const app = window.Unidex && window.Unidex.app;
         const mod = btn.dataset.module;
         const isScan = btn.id === 'tab-scan';
 

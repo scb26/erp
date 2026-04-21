@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   // Shared helpers keep formatting and safe string handling consistent across the app.
@@ -60,4 +60,4 @@ window.LedgerFlow = window.LedgerFlow || {};
     clone: clone,
     escapeHtml: escapeHtml
   };
-})(window.LedgerFlow);
+})(window.Unidex);

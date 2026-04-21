@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   // The registry gives the bootstrap a single place to initialize and render business modules.
@@ -32,4 +32,4 @@ window.LedgerFlow = window.LedgerFlow || {};
     initAll: initAll,
     renderAll: renderAll
   };
-})(window.LedgerFlow);
+})(window.Unidex);

@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var config = ns.config;
@@ -83,4 +83,4 @@ window.LedgerFlow = window.LedgerFlow || {};
     setActiveModule: setActiveModule,
     renderModuleMenu: renderModuleMenu
   };
-})(window.LedgerFlow);
+})(window.Unidex);

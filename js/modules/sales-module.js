@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var utils = ns.utils;
@@ -1082,5 +1082,5 @@ window.LedgerFlow = window.LedgerFlow || {};
       nextInvoiceNumber: nextInvoiceNumber
     }
   };
-})(window.LedgerFlow);
+})(window.Unidex);
 

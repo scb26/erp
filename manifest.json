@@ -4,9 +4,26 @@
   "description": "Counter Billing and GST Invoice System",
   "start_url": "./index.html",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#0f0f12",
   "theme_color": "#56beff",
+  "shortcuts": [
+    {
+      "name": "Quick Bill",
+      "short_name": "Bill",
+      "description": "Open the POS Scanner",
+      "url": "/index.html?module=quickbill",
+      "icons": [{ "src": "./pwa/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sales History",
+      "short_name": "Sales",
+      "description": "View Recent Invoices",
+      "url": "/index.html?module=sales",
+      "icons": [{ "src": "./pwa/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "./pwa/icons/icon-192.png",

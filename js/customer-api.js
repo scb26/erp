@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var config = ns.config;
@@ -113,4 +113,4 @@ window.LedgerFlow = window.LedgerFlow || {};
     updateCustomer: updateCustomer,
     deleteCustomer: deleteCustomer
   };
-})(window.LedgerFlow);
+})(window.Unidex);

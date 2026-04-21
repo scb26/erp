@@ -1,4 +1,4 @@
-window.LedgerFlow = window.LedgerFlow || {};
+window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var utils = ns.utils;
@@ -68,4 +68,4 @@ window.LedgerFlow = window.LedgerFlow || {};
     init: init,
     render: render
   };
-})(window.LedgerFlow);
+})(window.Unidex);

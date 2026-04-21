@@ -1,64 +1,58 @@
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import dotenv from 'dotenv';
 
-const host = "0.0.0.0";
-const port = 8080;
-const root = __dirname;
+dotenv.config();
 
-const mimeTypes = {
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".ico": "image/x-icon",
-  ".jpeg": "image/jpeg",
-  ".jpg": "image/jpeg",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".png": "image/png",
-  ".svg": "image/svg+xml",
-  ".txt": "text/plain; charset=utf-8",
-  ".webmanifest": "application/manifest+json"
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-function send(res, statusCode, body, contentType) {
-  res.writeHead(statusCode, {
-    "Cache-Control": "no-cache",
-    "Content-Type": contentType
-  });
-  res.end(body);
-}
+const app = express();
+const port = process.env.PORT || 8080;
 
-function resolveFilePath(urlPath) {
-  const requestPath = decodeURIComponent((urlPath || "/").split("?")[0]);
-  const normalizedPath = path.normalize(requestPath === "/" ? "/index.html" : requestPath);
-  const relativePath = normalizedPath.replace(/^(\.\.[\\/])+/, "").replace(/^[/\\]+/, "");
-  return path.join(root, relativePath);
-}
+// 1. Security Hardening (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "'unsafe-inline'", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
+      "img-src": ["'self'", "data:", "https:*"],
+      "connect-src": ["'self'", "http://localhost:*", "ws://localhost:*"]
+    },
+  },
+}));
 
-const server = http.createServer((req, res) => {
-  let filePath = resolveFilePath(req.url);
+// 2. Performance: Gzip Compression
+app.use(compression());
 
-  fs.stat(filePath, (statError, stats) => {
-    if (!statError && stats.isDirectory()) {
-      filePath = path.join(filePath, "index.html");
+// 3. Security: Rate Limiting (Prevents Brute Force)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// 4. Serve Static Files
+app.use(express.static(__dirname, {
+  maxAge: '1d',
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
     }
+  }
+}));
 
-    fs.readFile(filePath, (readError, content) => {
-      if (readError) {
-        send(res, 404, "Not found", "text/plain; charset=utf-8");
-        return;
-      }
-
-      send(
-        res,
-        200,
-        content,
-        mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream"
-      );
-    });
-  });
+// Handle SPA routing - send index.html for all unknown paths
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-server.listen(port, host, () => {
-  console.log(`Frontend running on http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Unidex Production Server running on http://localhost:${port}`);
 });

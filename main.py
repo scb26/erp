@@ -7,7 +7,7 @@ from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
-GEMINI_API_KEY = "AIzaSyD363e1_Zbh_xod55-5C-ebiaKml2TNocY"
+GEMINI_API_KEY = ""
 CSV_FILE_PATH = r"D:\New folder\erp\HSN_SAC.csv"
 
 # 1. Initialize Gemini Client

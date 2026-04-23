@@ -1,6 +1,7 @@
 window.Unidex = window.Unidex || {};
 
 (function (ns) {
+  var utils = ns.utils;
   var stateStore = ns.stateStore;
 
   var uiState = {
@@ -60,14 +61,14 @@ window.Unidex = window.Unidex || {};
       return '<div class="data-card" style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">' +
         '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
           '<div>' +
-            '<strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 2px;">' + (v.name || "Unnamed") + '</strong>' +
-            '<span style="color: var(--muted); font-size: 0.85rem;">Phone: ' + (v.phone || "N/A") + '</span>' +
+            '<strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 2px;">' + utils.escapeHtml(v.name || "Unnamed") + '</strong>' +
+            '<span style="color: var(--muted); font-size: 0.85rem;">Phone: ' + utils.escapeHtml(v.phone || "N/A") + '</span>' +
           '</div>' +
           '<span class="badge badge--primary">₹' + (v.balance || 0).toLocaleString("en-IN") + ' Payable</span>' +
         '</div>' +
         '<div style="display: flex; gap: 8px;">' +
-          '<button class="button button--secondary button--small edit-vendor-btn" data-id="' + v.id + '" type="button" style="flex: 1;">Edit</button>' +
-          '<button class="button button--secondary button--small delete-vendor-btn" data-id="' + v.id + '" type="button" style="flex: 1; border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">Delete</button>' +
+          '<button class="button button--secondary button--small edit-vendor-btn" data-id="' + utils.escapeHtml(v.id) + '" type="button" style="flex: 1;">Edit</button>' +
+          '<button class="button button--secondary button--small delete-vendor-btn" data-id="' + utils.escapeHtml(v.id) + '" type="button" style="flex: 1; border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">Delete</button>' +
         '</div>' +
       '</div>';
     }).join("");

@@ -103,13 +103,6 @@ window.Unidex = window.Unidex || {};
     }
 
     app.elements.moduleMenu.addEventListener("click", function (event) {
-      var target;
-
-      if (event.target.dataset.billingView && typeof app.setActiveBillingView === "function") {
-        app.setActiveBillingView(event.target.dataset.billingView);
-        return;
-      }
-
       if (event.target.dataset.subView) {
         if (app.activeModule === "sales" && typeof app.setActiveBillingView === "function") {
           app.setActiveBillingView(event.target.dataset.subView);

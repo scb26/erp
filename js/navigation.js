@@ -71,7 +71,7 @@ window.Unidex = window.Unidex || {};
     app.elements.moduleMenu.innerHTML = config.MODULES[app.activeModule].menu.map(function (item) {
       var isActiveView = false;
       if (app.activeModule === "sales" && item.view === app.activeBillingView) isActiveView = true;
-      if (app.activeModule === "products" && item.view === app.activeProductView) isActiveView = true;
+      if (app.activeModule === "inventory" && item.view === app.activeProductView) isActiveView = true;
       
       var activeClass = isActiveView ? " is-active" : "";
       var viewAttribute = item.view ? ' data-sub-view="' + item.view + '"' : "";

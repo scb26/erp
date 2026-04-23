@@ -99,6 +99,33 @@ window.Unidex = window.Unidex || {};
   }
 
   // --- Normalizers ---
+  function normalizeCustomer(record) {
+    if (!record) return null;
+    return {
+      id: record.id,
+      name: record.name || record.customer_name || "",
+      mobile: record.mobile || record.phone || "",
+      phone: record.phone || record.mobile || "",
+      customerType: record.customer_type || "Individual",
+      companyName: record.company_name || "",
+      address: record.address || "",
+      gstNumber: record.gst_number || record.gstin || "",
+      gstin: record.gstin || record.gst_number || "",
+      openingBalance: record.opening_balance === null ? 0 : Number(record.opening_balance || 0),
+      creditLimit: record.credit_limit === null || record.credit_limit === "" ? null : Number(record.credit_limit),
+      email: record.email || "",
+      city: record.city || "",
+      state: record.state || record.state_name || "",
+      stateName: record.state_name || record.state || "",
+      pincode: record.pincode || record.postal_code || "",
+      postalCode: record.postal_code || record.pincode || "",
+      customerName: record.customer_name || record.name || "",
+      companyId: record.company_id || null,
+      customerCode: record.customer_code || "",
+      createdAt: record.created_at || null
+    };
+  }
+
   function normalizeVendor(v) {
     return Object.assign({}, v, {
       id: String(v.id),
@@ -145,6 +172,40 @@ window.Unidex = window.Unidex || {};
   }
 
   // --- DAL Methods (CRUD) ---
+
+  function listCustomers() {
+    return request("/customers", { method: "GET" }).then(function(response) {
+      return (response.data || []).map(normalizeCustomer);
+    });
+  }
+
+  function createCustomer(app, payload) {
+    return request("/customers", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }).then(function(response) {
+      return syncAll(app).then(function() {
+        return normalizeCustomer(response.data);
+      });
+    });
+  }
+
+  function updateCustomer(app, id, payload) {
+    return request("/customers/" + encodeURIComponent(id), {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    }).then(function(response) {
+      return syncAll(app).then(function() {
+        return normalizeCustomer(response.data);
+      });
+    });
+  }
+
+  function deleteCustomer(app, id) {
+    return request("/customers/" + encodeURIComponent(id), { method: "DELETE" }).then(function() {
+      return syncAll(app);
+    });
+  }
 
   function addVendor(app, vendor) {
     return request("/vendors", {
@@ -234,6 +295,15 @@ window.Unidex = window.Unidex || {};
     });
   }
 
+  function recordPurchasePayment(app, billNo, amount) {
+    return request("/purchase-bills/" + encodeURIComponent(billNo) + "/payments", {
+      method: "POST",
+      body: JSON.stringify({ amount: amount })
+    }).then(function() {
+      return syncAll(app);
+    });
+  }
+
   function getVendors(app) { return app.data.vendors || []; }
   function getInventoryItems(app) { return app.data.products || []; }
   function getPurchaseBills(app) { return app.data.purchases || []; }
@@ -249,6 +319,10 @@ window.Unidex = window.Unidex || {};
     hydrate: hydrate,
     persist: persist,
     syncAll: syncAll,
+    listCustomers: listCustomers,
+    createCustomer: createCustomer,
+    updateCustomer: updateCustomer,
+    deleteCustomer: deleteCustomer,
     getVendors: getVendors,
     addVendor: addVendor,
     updateVendor: updateVendor,
@@ -260,6 +334,8 @@ window.Unidex = window.Unidex || {};
     deleteInventoryItem: deleteInventoryItem,
     getPurchaseBills: getPurchaseBills,
     savePurchaseBill: savePurchaseBill,
+    recordPurchasePayment: recordPurchasePayment,
     saveInvoice: saveInvoice
   };
 })(window.Unidex);
+

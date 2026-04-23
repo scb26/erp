@@ -8,13 +8,6 @@ window.Unidex = window.Unidex || {};
     searchQuery: ""
   };
 
-  function escHtml(str) {
-    return String(str == null ? "" : str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
 
   function init(app) {
     if (!app.elements.productForm) return;
@@ -99,8 +92,8 @@ window.Unidex = window.Unidex || {};
       return '<div class="data-card" style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">' +
         '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
           '<div>' +
-            '<strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 2px;">' + escHtml(p.name) + '</strong>' +
-            '<span style="color: var(--muted); font-size: 0.85rem;">Barcode: ' + (p.barcode ? escHtml(p.barcode) : "N/A") + '</span>' +
+            '<strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 2px;">' + utils.escapeHtml(p.name) + '</strong>' +
+            '<span style="color: var(--muted); font-size: 0.85rem;">Barcode: ' + (p.barcode ? utils.escapeHtml(p.barcode) : "N/A") + '</span>' +
           '</div>' +
           '<span class="badge ' + stockBadgeClass + '">' + (p.stock || 0) + ' In Stock</span>' +
         '</div>' +
@@ -115,7 +108,7 @@ window.Unidex = window.Unidex || {};
           '</div>' +
         '</div>' +
         '<div style="display: flex; gap: 8px;">' +
-          '<button class="button button--secondary button--small edit-btn" data-id="' + escHtml(p.id) + '" type="button" style="flex: 1;">Edit</button>' +
+          '<button class="button button--secondary button--small edit-btn" data-id="' + utils.escapeHtml(p.id) + '" type="button" style="flex: 1;">Edit</button>' +
           '<button class="button button--secondary button--small" type="button" style="flex: 1;">History</button>' +
         '</div>' +
       '</div>';

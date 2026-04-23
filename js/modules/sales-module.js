@@ -2,6 +2,7 @@ window.Unidex = window.Unidex || {};
 
 (function (ns) {
   var utils = ns.utils;
+  var stateStore = ns.stateStore;
 
   ns.modules = ns.modules || {};
 
@@ -188,9 +189,9 @@ window.Unidex = window.Unidex || {};
 
         var promise;
         if (customerId) {
-          promise = ns.customerApi.updateCustomer(customerId, payload);
+          promise = stateStore.updateCustomer(app, customerId, payload);
         } else {
-          promise = ns.customerApi.createCustomer(payload);
+          promise = stateStore.createCustomer(app, payload);
         }
 
         promise.then(function() {
@@ -234,9 +235,7 @@ window.Unidex = window.Unidex || {};
         } else if (action === "delete") {
           // PWA-safe inline confirm — two-tap pattern
           if (event.target.dataset.confirmPending === "true") {
-            ns.customerApi.deleteCustomer(customerId).then(function() {
-              return stateStore.syncAll(app);
-            }).then(function() {
+            stateStore.deleteCustomer(app, customerId).then(function() {
               render(app); 
               setCustomerMessage(app, "Customer deleted from backend.", "success");
             }).catch(function(err) {

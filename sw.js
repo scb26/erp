@@ -86,17 +86,6 @@ function isAppShellRequest(request) {
   );
 }
 
-// 5. Background Sync for Offline Actions
-self.addEventListener('sync', event => {
-  if (event.tag === 'sync-invoices') {
-    event.waitUntil(syncInvoices());
-  }
-});
-
-async function syncInvoices() {
-  console.log('[SW] Background Syncing Invoices...');
-  // Logic to read from IndexedDB and POST to server goes here
-}
 
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);

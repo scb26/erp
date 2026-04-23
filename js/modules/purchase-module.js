@@ -1,6 +1,7 @@
 window.Unidex = window.Unidex || {};
 
 (function (ns) {
+  var utils = ns.utils;
   var stateStore = ns.stateStore;
 
   // Internal draft object to track the current bill being created
@@ -15,13 +16,6 @@ window.Unidex = window.Unidex || {};
     notes: ""
   };
 
-  function escHtml(str) {
-    return String(str == null ? "" : str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
 
   function init(app) {
     if (!app.elements.purchaseForm) return;
@@ -133,8 +127,8 @@ window.Unidex = window.Unidex || {};
 
     if (filtered.length > 0) {
       app.elements.purchaseVendorSuggestions.innerHTML = filtered.map(function(v) {
-        return '<div class="customer-suggestion" data-customer-id="' + v.id + '" data-name="' + escHtml(v.name) + '">' +
-                 '<strong>' + escHtml(v.name) + '</strong><br><small>' + escHtml(v.phone) + '</small>' +
+        return '<div class="customer-suggestion" data-customer-id="' + utils.escapeHtml(v.id) + '" data-name="' + utils.escapeHtml(v.name) + '">' +
+                 '<strong>' + utils.escapeHtml(v.name) + '</strong><br><small>' + utils.escapeHtml(v.phone) + '</small>' +
                '</div>';
       }).join("");
       app.elements.purchaseVendorSuggestions.hidden = false;
@@ -154,8 +148,8 @@ window.Unidex = window.Unidex || {};
 
     if (filtered.length > 0) {
       suggestions.innerHTML = filtered.map(function(p) {
-        return '<div class="customer-suggestion" data-customer-id="' + p.id + '" data-name="' + escHtml(p.name) + '" data-price="' + p.price + '" data-gst="' + p.gstRate + '">' +
-                 '<strong>' + escHtml(p.name) + '</strong><br><small>₹' + p.price + ' | GST ' + p.gstRate + '%</small>' +
+        return '<div class="customer-suggestion" data-customer-id="' + utils.escapeHtml(p.id) + '" data-name="' + utils.escapeHtml(p.name) + '" data-price="' + p.price + '" data-gst="' + p.gstRate + '">' +
+                 '<strong>' + utils.escapeHtml(p.name) + '</strong><br><small>₹' + p.price + ' | GST ' + p.gstRate + '%</small>' +
                '</div>';
       }).join("");
       suggestions.hidden = false;
@@ -301,11 +295,11 @@ window.Unidex = window.Unidex || {};
 
       return '<div class="data-card" style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">' +
         '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">' +
-          '<strong style="color: var(--text); font-size: 1.1rem;">' + escHtml(p.billNo) + '</strong>' +
-          '<span style="color: var(--muted);">' + escHtml(p.date) + '</span>' +
+          '<strong style="color: var(--text); font-size: 1.1rem;">' + utils.escapeHtml(p.billNo) + '</strong>' +
+          '<span style="color: var(--muted);">' + utils.escapeHtml(p.date) + '</span>' +
         '</div>' +
         '<div style="color: var(--text); margin-bottom: 16px; font-weight: 500;">' +
-          escHtml(p.vendorName) +
+          utils.escapeHtml(p.vendorName) +
         '</div>' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">' +
           '<div><span style="color: var(--muted); font-size: 0.85rem;">Grand Total:</span> <strong style="color: var(--text);">₹' + (p.grandTotal || 0).toLocaleString("en-IN") + '</strong></div>' +
@@ -318,7 +312,7 @@ window.Unidex = window.Unidex || {};
         '<div style="display: flex; gap: 8px; border-top: 1px dashed var(--border); padding-top: 16px;">' +
           '<button class="button button--secondary button--small" type="button">View</button>' +
           '<button class="button button--secondary button--small" type="button">PDF</button>' +
-          '<button class="button button--secondary button--small record-payment-btn" data-id="' + escHtml(p.billNo) + '" type="button">Pay</button>' +
+          '<button class="button button--secondary button--small record-payment-btn" data-id="' + utils.escapeHtml(p.billNo) + '" type="button">Pay</button>' +
         '</div>' +
       '</div>';
     }).join("");

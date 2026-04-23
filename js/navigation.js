@@ -69,11 +69,14 @@ window.Unidex = window.Unidex || {};
 
   function renderModuleMenu(app) {
     app.elements.moduleMenu.innerHTML = config.MODULES[app.activeModule].menu.map(function (item) {
-      var isActiveBillingView = app.activeModule === "sales" && item.view && item.view === app.activeBillingView;
-      var activeClass = isActiveBillingView ? " is-active" : "";
-      var billingViewAttribute = item.view ? ' data-billing-view="' + item.view + '"' : "";
+      var isActiveView = false;
+      if (app.activeModule === "sales" && item.view === app.activeBillingView) isActiveView = true;
+      if (app.activeModule === "products" && item.view === app.activeProductView) isActiveView = true;
+      
+      var activeClass = isActiveView ? " is-active" : "";
+      var viewAttribute = item.view ? ' data-sub-view="' + item.view + '"' : "";
 
-      return '<button class="module-menu__button' + activeClass + '" type="button" data-target-id="' + item.target + '"' + billingViewAttribute + ">" + item.label + "</button>";
+      return '<button class="module-menu__button' + activeClass + '" type="button" data-target-id="' + item.target + '"' + viewAttribute + ">" + item.label + "</button>";
     }).join("");
   }
 

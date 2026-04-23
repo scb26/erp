@@ -500,7 +500,7 @@ window.Unidex = window.Unidex || {};
     var bottomBarContentPwa = document.querySelector(".qb-bottom-bar-content");
 
     var helpers = getSalesHelpers();
-    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : "" };
+    var defaultCustomer = { state: utils.getSafe(app.data, "company.state", "") };
     var totals;
     var rows;
 
@@ -566,7 +566,7 @@ window.Unidex = window.Unidex || {};
 
   function showUpiModal(app) {
     var cart = app.quickBillCart || [];
-    var defaultCustomer = { state: app.data.company && app.data.company.state ? app.data.company.state : "" };
+    var defaultCustomer = { state: utils.getSafe(app.data, "company.state", "") };
     var helpers = getSalesHelpers();
     var totals;
     var existing = document.getElementById("pos-upi-modal");
@@ -584,8 +584,8 @@ window.Unidex = window.Unidex || {};
     totals = helpers.calculateTotals(app, defaultCustomer, cart);
     if (existing) existing.remove();
 
-    upiId = app.data.company && app.data.company.upiId ? app.data.company.upiId : null;
-    merchantName = app.data.company && app.data.company.name ? encodeURIComponent(app.data.company.name) : "Unidex";
+    upiId = utils.getSafe(app.data, "company.upiId", null);
+    merchantName = encodeURIComponent(utils.getSafe(app.data, "company.name", "Unidex"));
     upiUri = "";
     qrContent = "";
 
@@ -669,7 +669,7 @@ window.Unidex = window.Unidex || {};
     defaultCustomer = {
       name: "Walk-in Customer",
       address: "",
-      state: app.data.company && app.data.company.state ? app.data.company.state : "Unknown",
+      state: utils.getSafe(app.data, "company.state", "Unknown"),
       mobile: "",
       email: "",
       gstNumber: ""

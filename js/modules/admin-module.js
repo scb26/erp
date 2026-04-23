@@ -11,6 +11,13 @@ window.Unidex = window.Unidex || {};
 
   // Admin module owns the business profile that powers invoice headers and GST comparisons.
   function init(app) {
+    // If company data is completely missing and it's not a fresh install (no name),
+    // we can wait a bit for the async sync to potentially populate it,
+    // though erp.js now awaits syncAll before calling initAll.
+    if (!app.data.company || !app.data.company.name) {
+       console.log("Admin module: Company profile not found. Form will be empty.");
+    }
+
     bindAssetInput(app.elements.companyLogoInput, app.elements.companyLogoDataInput, app.elements.companyLogoPreview, "Add Logo");
     bindAssetInput(app.elements.companySignatureInput, app.elements.companySignatureDataInput, app.elements.companySignaturePreview, "Add Signature");
 
@@ -40,7 +47,7 @@ window.Unidex = window.Unidex || {};
   }
 
   function fillCompanyForm(app) {
-    var company = app.data.company;
+    var company = app.data.company || {}; // Safety: Default to empty object
 
     app.elements.companyNameInput.value = company.name || "";
     app.elements.adminCompanyUpi.value = company.upiId || "";
@@ -63,9 +70,10 @@ window.Unidex = window.Unidex || {};
   }
 
   function renderSummary(app) {
-    app.elements.adminCompanyName.textContent = app.data.company.name || "-";
-    app.elements.adminCompanyGstin.textContent = app.data.company.gstin || "-";
-    app.elements.adminCompanyState.textContent = app.data.company.state || "-";
+    var utils = ns.utils;
+    app.elements.adminCompanyName.textContent = utils.getSafe(app.data, "company.name", "-");
+    app.elements.adminCompanyGstin.textContent = utils.getSafe(app.data, "company.gstin", "-");
+    app.elements.adminCompanyState.textContent = utils.getSafe(app.data, "company.state", "-");
   }
 
   function buildCompanyPayload(app) {

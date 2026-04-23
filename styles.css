@@ -3157,3 +3157,241 @@ body.hide-site-header .site-header {
 
 
 
+
+/* -- NEW INVENTORY MODULE STYLES -- */
+.inventory-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.inventory-search-bar {
+  flex: 1;
+  min-width: 250px;
+}
+
+.inventory-search-bar input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.inventory-search-bar input:focus {
+  outline: none;
+  border-color: #56beff;
+  background: rgba(86, 190, 255, 0.05);
+}
+
+.inventory-top-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.inventory-alerts {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.alert-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.alert-icon {
+  font-size: 1.5rem;
+}
+
+.alert-banner strong {
+  display: block;
+  color: #ff6b6b;
+  margin-bottom: 8px;
+}
+
+.alert-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.alert-list li {
+  margin-bottom: 4px;
+}
+
+.product-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: var(--panel-strong);
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.stock-tag {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.stock-tag.stock-low {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.product-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inventory-empty-state {
+  padding: 32px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* FAB Button for Mobile */
+.fab-button {
+  display: none;
+  position: fixed;
+  bottom: 80px; /* Above PWA nav */
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #56beff;
+  color: #0f0f12;
+  font-size: 2rem;
+  font-weight: 300;
+  border: none;
+  box-shadow: 0 4px 12px rgba(86, 190, 255, 0.4);
+  z-index: 100;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .inventory-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .inventory-search-bar {
+    min-width: 0;
+  }
+  .inventory-top-actions {
+    display: flex !important;
+    gap: 10px;
+  }
+  .inventory-top-actions button {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 10px 8px;
+    white-space: nowrap;
+  }
+  .fab-button {
+    display: none !important;
+  }
+}
+
+/* Modal Dialog */
+.modal-dialog {
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: #1a1a2e;
+  color: #fff;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.modal-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  padding: 24px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-modal:hover {
+  color: #fff;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Product View Visibility */
+.product-view {
+  display: none;
+}
+.product-view.is-active {
+  display: block;
+}

@@ -23,8 +23,10 @@ window.Unidex = window.Unidex || {};
     STORAGE_KEYS: {
       company: "unidex-company",
       customers: "unidex-customers",
+      vendors: "unidex-vendors",
       products: "unidex-products",
       invoices: "unidex-invoices",
+      purchases: "unidex-purchases",
       expenses: "unidex-expenses",
       sidebar: "unidex-sidebar-collapsed"
     },
@@ -62,13 +64,15 @@ window.Unidex = window.Unidex || {};
           { label: "Customer List", target: "customer-list-panel", view: "customer-list-panel" }
         ]
       },
-      products: {
-        title: "Products",
-        description: "Manage products and services with price, HSN or SAC, and GST rates for faster billing.",
-        menuTitle: "Product Menu",
+      inventory: {
+        title: "Inventory Management",
+        description: "Manage products, monitor stock levels, and set low-stock alerts.",
+        menuTitle: "Inventory Menu",
         menu: [
-          { label: "Add Product", target: "product-add" },
-          { label: "Inventory", target: "product-inventory-panel" }
+          { label: "New Purchase", target: "product-new-purchase", view: "new-purchase" },
+          { label: "Purchase History", target: "product-purchase-history", view: "purchase-history" },
+          { label: "Vendors", target: "product-vendors", view: "vendors" },
+          { label: "Inventory", target: "product-inventory-list", view: "inventory" }
         ]
       },
       admin: {

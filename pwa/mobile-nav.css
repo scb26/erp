@@ -37,13 +37,13 @@
   /* ── Site shell full width on mobile ── */
   .site-shell {
     width: 100%;
-    padding: 12px 12px 0;
+    padding: calc(12px + env(safe-area-inset-top, 0)) 12px 0;
     margin: 0;
   }
 
   /* ── Compact sticky header for mobile ── */
   .site-header {
-    top: 8px;
+    top: calc(8px + env(safe-area-inset-top, 0));
     margin-bottom: 14px;
     padding: 10px 14px;
     border-radius: 18px;

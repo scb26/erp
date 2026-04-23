@@ -51,6 +51,22 @@ window.Unidex = window.Unidex || {};
     });
   }
 
+  function getSafe(obj, path, defaultValue) {
+    var parts = path.split(".");
+    var current = obj;
+    var i;
+
+    for (i = 0; i < parts.length; i++) {
+      if (current && current[parts[i]] !== undefined && current[parts[i]] !== null) {
+        current = current[parts[i]];
+      } else {
+        return defaultValue === undefined ? "-" : defaultValue;
+      }
+    }
+
+    return current;
+  }
+
   ns.utils = {
     readJSON: readJSON,
     formatCurrency: formatCurrency,
@@ -58,6 +74,7 @@ window.Unidex = window.Unidex || {};
     today: today,
     createId: createId,
     clone: clone,
-    escapeHtml: escapeHtml
+    escapeHtml: escapeHtml,
+    getSafe: getSafe
   };
 })(window.Unidex);

@@ -102,13 +102,15 @@ window.Unidex = window.Unidex || {};
         return;
       }
 
-      app.data.invoices.unshift(draft);
-      deductStock(app, draft.items);
-      app.previewInvoice = draft;
-      app.persist();
-      resetForm(app, { keepPreview: true });
-      setActiveBillingView(app, "invoice");
-      setMessage(app, "Invoice " + draft.invoiceNumber + " saved successfully. You can review it in the preview and history below.", "success");
+      stateStore.saveInvoice(app, draft).then(function() {
+        app.previewInvoice = draft; // Keep local draft for immediate preview
+        resetForm(app, { keepPreview: true });
+        setActiveBillingView(app, "invoice");
+        setMessage(app, "Invoice " + draft.invoiceNumber + " saved successfully. Synchronized with backend.", "success");
+        render(app); // Re-render to show updated history from sync
+      }).catch(function(err) {
+        setMessage(app, "Error saving invoice: " + err.message, "error");
+      });
     });
 
     app.elements.invoiceHistory.addEventListener("click", function (event) {
@@ -184,26 +186,22 @@ window.Unidex = window.Unidex || {};
           return;
         }
 
+        var promise;
         if (customerId) {
-          var index = app.data.customers.findIndex(function (c) {
-            return String(c.id) === String(customerId);
-          });
-          if (index !== -1) {
-            app.data.customers[index] = Object.assign({}, app.data.customers[index], payload, { id: customerId });
-          }
-          setCustomerMessage(app, "Customer updated successfully.", "success");
+          promise = ns.customerApi.updateCustomer(customerId, payload);
         } else {
-          var newCustomer = Object.assign({}, payload, {
-            id: utils.createId("CUS"),
-            createdAt: new Date().toISOString()
-          });
-          app.data.customers.unshift(newCustomer);
-          setCustomerMessage(app, "Customer added successfully.", "success");
+          promise = ns.customerApi.createCustomer(payload);
         }
 
-        app.persist();
-        app.renderAll();
-        resetCustomerForm(app);
+        promise.then(function() {
+          setCustomerMessage(app, "Customer saved successfully to backend.", "success");
+          return stateStore.syncAll(app);
+        }).then(function() {
+          render(app); 
+          resetCustomerForm(app);
+        }).catch(function(err) {
+          setCustomerMessage(app, "Error saving customer: " + err.message, "error");
+        });
       });
     }
 
@@ -236,11 +234,14 @@ window.Unidex = window.Unidex || {};
         } else if (action === "delete") {
           // PWA-safe inline confirm — two-tap pattern
           if (event.target.dataset.confirmPending === "true") {
-            app.data.customers = app.data.customers.filter(function (item) { return String(item.id) !== String(customerId); });
-            if (String(app.elements.customerIdInput.value) === String(customerId)) resetCustomerForm(app);
-            app.persist();
-            app.renderAll();
-            setCustomerMessage(app, "Customer deleted.", "success");
+            ns.customerApi.deleteCustomer(customerId).then(function() {
+              return stateStore.syncAll(app);
+            }).then(function() {
+              render(app); 
+              setCustomerMessage(app, "Customer deleted from backend.", "success");
+            }).catch(function(err) {
+              setCustomerMessage(app, "Error deleting customer: " + err.message, "error");
+            });
           } else {
             event.target.dataset.confirmPending = "true";
             event.target.textContent = "Confirm?";
@@ -424,7 +425,8 @@ window.Unidex = window.Unidex || {};
     var cgst = 0;
     var sgst = 0;
     var igst = 0;
-    var intraState = customer.state === app.data.company.state;
+    var companyState = utils.getSafe(app.data, "company.state", "");
+    var intraState = customer.state === companyState;
 
     items.forEach(function (item) {
       var itemTax = item.taxableValue * item.gstRate / 100;
@@ -444,6 +446,16 @@ window.Unidex = window.Unidex || {};
       sgst: utils.round(sgst),
       igst: utils.round(igst),
       grandTotal: utils.round(subtotal + cgst + sgst + igst)
+    };
+  }
+
+  function emptyTotals() {
+    return {
+      subtotal: 0,
+      cgst: 0,
+      sgst: 0,
+      igst: 0,
+      grandTotal: 0
     };
   }
 
@@ -696,7 +708,7 @@ window.Unidex = window.Unidex || {};
       email: "",
       address: "",
       gstNumber: "",
-      state: app.data.company.state || "",
+      state: utils.getSafe(app.data, "company.state", ""),
       customerType: "Individual",
       isAdHoc: true
     };
@@ -728,7 +740,7 @@ window.Unidex = window.Unidex || {};
       return [
         '<button class="customer-suggestion" type="button" data-customer-id="' + customer.id + '">',
         '<span class="customer-suggestion__name">' + utils.escapeHtml(customer.name) + "</span>",
-        '<small>' + utils.escapeHtml(customer.state || app.data.company.state || "No state") + "</small>",
+        '<small>' + utils.escapeHtml(customer.state || utils.getSafe(app.data, "company.state", "No state")) + "</small>",
         "</button>"
       ].join("");
     }).join("");

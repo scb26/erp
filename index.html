@@ -16,6 +16,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="pwa/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="pwa/icons/icon-512.png">
   <script>
+    // Diagnostic Helper: Catch and alert startup errors
+    window.onerror = function(msg, url, line) {
+      alert("Application Error: " + msg + "\nAt: " + url + ":" + line);
+      const loader = document.getElementById("global-sync-loader");
+      if (loader) loader.classList.add("hidden"); // Emergency hide on crash
+    };
+
     (function () {
       var key = "unidex-theme";
       var stored = localStorage.getItem(key);
@@ -97,9 +104,47 @@
       box-shadow: 0 4px 16px rgba(255,107,107,0.4);
     }
     #offline-toast.show { display: block; }
+
+    /* Global Sync Loader Styles */
+    #global-sync-loader {
+      position: fixed;
+      inset: 0;
+      background: #0f0f12; /* Match theme-dark bg */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+    #global-sync-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+    .loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: #56beff; /* Match primary color */
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loader-text {
+      color: #fff;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
   </style>
 </head>
-<body>
+<body class="theme-dark">
+  <div id="global-sync-loader">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">Synchronizing with Backend...</div>
+  </div>
   <!-- PWA Install Banner -->
   <div id="pwa-install-banner" class="hidden" role="complementary" aria-label="Install app">
     <img src="pwa/icons/icon-192.png" alt="Unidex ERP icon">
@@ -177,7 +222,7 @@
             <span class="feature-button__label">Sales</span>
             <small>GST invoices and customers</small>
           </button>
-          <button class="feature-button" type="button" data-module="products">
+          <button class="feature-button" type="button" data-module="inventory">
             <span class="feature-button__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" focusable="false">
                 <path d="m12 3 8 4.5v9L12 21 4 16.5v-9L12 3Z"></path>
@@ -185,8 +230,8 @@
                 <path d="M12 12v9"></path>
               </svg>
             </span>
-            <span class="feature-button__label">Products</span>
-            <small>Items, price, GST</small>
+            <span class="feature-button__label">Inventory</span>
+            <small>Items, stock, alerts</small>
           </button>
           <button class="feature-button" type="button" data-module="admin">
             <span class="feature-button__icon" aria-hidden="true">
@@ -239,7 +284,7 @@
           <span class="pwa-tab__label">SCAN</span>
         </button>
 
-        <button class="pwa-tab" type="button" data-module="products" id="tab-products">
+        <button class="pwa-tab" type="button" data-module="inventory" id="tab-inventory">
           <span class="pwa-tab__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path d="m12 3 8 4.5v9L12 21 4 16.5v-9L12 3Z"></path>
@@ -247,7 +292,7 @@
               <path d="M12 12v9"></path>
             </svg>
           </span>
-          <span class="pwa-tab__label">Products</span>
+          <span class="pwa-tab__label">Inventory</span>
         </button>
 
         <button class="pwa-tab" type="button" data-module="admin" id="tab-admin">
@@ -609,17 +654,372 @@
             </section>
           </section>
 
-          <section class="module-screen" data-module="products">
-            <div class="content-grid content-grid--two">
-              <article id="product-add" class="panel module-card">
+          <section class="module-screen" data-module="inventory">
+
+            <!-- View: New Purchase -->
+            <section id="product-new-purchase" class="product-view" data-product-view="new-purchase">
+              <div class="content-grid content-grid--invoice">
+                <article class="panel module-card">
+                  <div class="panel-head">
+                    <div>
+                      <h2>New Purchase Bill</h2>
+                    </div>
+                  </div>
+                  <form id="purchase-form" class="app-form">
+                    
+                    <label class="field-span">
+                      <span>Vendor</span>
+                      <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <div class="customer-search" style="flex: 1;">
+                          <input id="purchase-vendor-name" name="purchaseVendorName" type="text" placeholder="Search or Select Vendor ▼" autocomplete="off" required>
+                          <input id="purchase-vendor" name="purchaseVendor" type="hidden">
+                          <div id="purchase-vendor-suggestions" class="customer-suggestions" hidden></div>
+                        </div>
+                        <button id="btn-quick-add-vendor" class="button button--secondary" type="button" style="white-space: nowrap;">+ Quick Add Vendor</button>
+                      </div>
+                    </label>
+
+                    <label>
+                      <span>Bill Date</span>
+                      <input id="purchase-date" name="purchaseDate" type="date" required>
+                    </label>
+                    <label>
+                      <span>Bill Number</span>
+                      <input id="purchase-number" name="purchaseNumber" type="text" placeholder="PUR-2026-045" required>
+                    </label>
+
+                    <div class="line-items field-span">
+                      <div class="line-items__head">
+                        <h3>Items</h3>
+                      </div>
+                      <div id="purchase-line-items" class="line-item-list">
+                        <!-- Default Line Item Row -->
+                        <div class="line-item-row">
+                          <label>
+                            <span>Product</span>
+                            <div class="customer-search">
+                              <input class="purchase-line-product-search" type="text" placeholder="Scan or Search Product" autocomplete="off">
+                              <input class="purchase-line-product-id" type="hidden">
+                              <div class="customer-suggestions" hidden></div>
+                            </div>
+                          </label>
+                          <label>
+                            <span>Qty</span>
+                            <input class="purchase-line-qty" type="number" min="0" step="0.01" value="1">
+                          </label>
+                          <label>
+                            <span>Rate</span>
+                            <input class="purchase-line-rate" type="number" min="0" step="0.01" placeholder="0.00">
+                          </label>
+                          <label>
+                            <span>GST %</span>
+                            <input class="purchase-line-gst" type="number" min="0" step="0.01" value="0">
+                          </label>
+                          <button class="button button--secondary remove-line" type="button" aria-label="Remove item" style="padding: 0 12px; font-size: 1.2rem;">×</button>
+                        </div>
+                      </div>
+                      <button id="add-purchase-line-item" class="button button--secondary" type="button" style="margin-top: 12px; align-self: flex-start;">+ Add More Item</button>
+                    </div>
+
+                    <div id="purchase-tax-summary" class="invoice-totals field-span">
+                      <div><span>Subtotal</span><strong id="purchase-subtotal-value">₹ 0.00</strong></div>
+                      <div><span>Total GST</span><strong id="purchase-gst-value">₹ 0.00</strong></div>
+                      <div class="invoice-totals__grand"><span>Grand Total</span><strong id="purchase-grand-total-value">₹ 0.00</strong></div>
+                    </div>
+
+                    <label>
+                      <span>Amount Paid</span>
+                      <input id="purchase-amount-paid" name="purchaseAmountPaid" type="number" min="0" step="0.01" placeholder="0.00">
+                    </label>
+                    <label>
+                      <span>Payment Method</span>
+                      <select id="purchase-payment-method" name="purchasePaymentMethod">
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="upi">UPI</option>
+                        <option value="credit">On Credit</option>
+                      </select>
+                    </label>
+
+                    <div class="invoice-totals field-span" style="border-top: none; padding-top: 0; margin-top: -12px;">
+                      <div class="invoice-totals__balance" style="display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.1); padding: 12px 16px; border-radius: 8px;">
+                        <span>Balance Due</span>
+                        <strong id="purchase-balance-due-value" style="color: #f59e0b; font-size: 1.25rem;">₹ 0.00</strong>
+                      </div>
+                    </div>
+
+                    <label class="field-span">
+                      <span>Notes</span>
+                      <textarea id="purchase-notes" name="purchaseNotes" rows="2" placeholder="Optional remarks..."></textarea>
+                    </label>
+
+                    <p id="purchase-form-message" class="form-message field-span" aria-live="polite"></p>
+                    
+                    <div class="button-row field-span" style="justify-content: flex-end;">
+                      <button id="cancel-purchase-btn" class="button button--secondary" type="button">Cancel</button>
+                      <button class="button button--primary" type="submit">SAVE PURCHASE BILL</button>
+                    </div>
+
+                  </form>
+                </article>
+              </div>
+            </section>
+
+            <!-- View: Purchase History -->
+            <section id="product-purchase-history" class="product-view" data-product-view="purchase-history">
+              <article class="panel module-card module-card--spaced">
                 <div class="panel-head">
-                  <div>
-                    <h2>Add item</h2>
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2>Purchase History</h2>
+                    <span style="color: var(--muted); font-size: 0.9rem;">47 bills</span>
                   </div>
                 </div>
+                
+                <!-- Search & Filters -->
+                <div style="padding: 16px 24px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--border);">
+                  <div class="inventory-search-bar" style="flex: 1; min-width: 0;">
+                    <input id="purchase-history-search" type="search" placeholder="Search by Bill No, Vendor..." autocomplete="off">
+                  </div>
+                  <button id="btn-purchase-history-filter" class="button button--secondary" type="button" style="white-space: nowrap;">📅 Filter</button>
+                  <input id="purchase-history-date-filter" type="date" style="display: none;">
+                </div>
+
+                <!-- History List -->
+                <div class="purchase-history-list" style="padding: 16px 24px; display: flex; flex-direction: column; gap: 16px;">
+                  
+                  <!-- Card 1 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <strong style="color: var(--text); font-size: 1.1rem;">PUR-2026-046</strong>
+                      <span style="color: var(--muted);">22 Apr</span>
+                    </div>
+                    <div style="color: var(--text); margin-bottom: 16px; font-weight: 500;">
+                      Sharma Pipe Traders
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                      <div><span style="color: var(--muted); font-size: 0.85rem;">Grand Total:</span> <strong style="color: var(--text);">₹18,450</strong></div>
+                      <div style="text-align: right;"><span class="status-badge status-badge--paid">🟢 PAID</span></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+                      <div style="color: #16a34a;">Paid: ₹18,450</div>
+                      <div style="text-align: right; color: var(--muted);">Due: ₹0</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; border-top: 1px dashed var(--border); padding-top: 16px;">
+                      <button class="button button--secondary button--small" type="button">View</button>
+                      <button class="button button--secondary button--small" type="button">PDF</button>
+                      <button class="button button--secondary button--small" type="button">Edit</button>
+                    </div>
+                  </div>
+
+                  <!-- Card 2 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <strong style="color: var(--text); font-size: 1.1rem;">PUR-2026-045</strong>
+                      <span style="color: var(--muted);">20 Apr</span>
+                    </div>
+                    <div style="color: var(--text); margin-bottom: 16px; font-weight: 500;">
+                      ABC Electricals
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                      <div><span style="color: var(--muted); font-size: 0.85rem;">Grand Total:</span> <strong style="color: var(--text);">₹7,890</strong></div>
+                      <div style="text-align: right;"><span class="status-badge status-badge--partial">🟠 PARTIAL</span></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+                      <div style="color: #16a34a;">Paid: ₹5,000</div>
+                      <div style="text-align: right; color: #f59e0b;">Due: ₹2,890</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; border-top: 1px dashed var(--border); padding-top: 16px;">
+                      <button class="button button--secondary button--small" type="button">View</button>
+                      <button class="button button--secondary button--small" type="button">PDF</button>
+                      <button class="button button--secondary button--small" type="button">Edit</button>
+                    </div>
+                  </div>
+
+                  <!-- Card 3 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <strong style="color: var(--text); font-size: 1.1rem;">PUR-2026-044</strong>
+                      <span style="color: var(--muted);">18 Apr</span>
+                    </div>
+                    <div style="color: var(--text); margin-bottom: 16px; font-weight: 500;">
+                      Mumbai Hardware Co.
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                      <div><span style="color: var(--muted); font-size: 0.85rem;">Grand Total:</span> <strong style="color: var(--text);">₹12,300</strong></div>
+                      <div style="text-align: right;"><span class="status-badge status-badge--unpaid">🔴 UNPAID</span></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; font-size: 0.9rem;">
+                      <div style="color: #16a34a;">Paid: ₹0</div>
+                      <div style="text-align: right; color: #f59e0b;">Due: ₹12,300</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; border-top: 1px dashed var(--border); padding-top: 16px;">
+                      <button class="button button--secondary button--small" type="button">View</button>
+                      <button class="button button--secondary button--small" type="button">PDF</button>
+                      <button class="button button--secondary button--small" type="button">Edit</button>
+                    </div>
+                  </div>
+
+                  <!-- Load More -->
+                  <button class="button button--secondary" type="button" style="width: 100%; margin-top: 8px;">Load More</button>
+
+                </div>
+              </article>
+            </section>
+
+            <!-- View: Vendors -->
+            <section id="product-vendors" class="product-view" data-product-view="vendors">
+              <article class="panel module-card module-card--spaced">
+                <div class="panel-head">
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <h2>Vendors</h2>
+                    <span style="background: var(--accent-soft); color: var(--accent-strong); padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 500;">12</span>
+                  </div>
+                </div>
+                
+                <!-- Search & Actions -->
+                <div style="padding: 16px 24px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--border);">
+                  <div class="inventory-search-bar" style="flex: 1; min-width: 0;">
+                    <input type="search" placeholder="Search vendors..." autocomplete="off">
+                  </div>
+                  <button id="btn-add-vendor" class="button button--primary" type="button" style="white-space: nowrap;">+ Add Vendor</button>
+                </div>
+
+                <!-- Vendor List -->
+                <div class="vendor-list-container" style="padding: 16px 24px; display: flex; flex-direction: column; gap: 16px;">
+                  
+                  <!-- Vendor Card 1 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+                      <strong style="color: var(--text); font-size: 1.15rem;">Sharma Pipe Traders</strong>
+                      <span style="color: var(--muted); display: flex; align-items: center; gap: 6px;">
+                        <span>📞</span> 98765 43210
+                      </span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: var(--bg); padding: 12px; border-radius: 6px;">
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Total Payable:</span>
+                        <strong style="color: #ef4444; font-size: 1.05rem;">₹42,000</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Last Purchase:</span>
+                        <span style="color: var(--text); font-size: 0.9rem;">22 Apr 2026</span>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">View</button>
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">Edit</button>
+                      <a href="tel:9876543210" class="button button--primary button--small" style="flex: 1; text-decoration: none; text-align: center;">Call</a>
+                    </div>
+                  </div>
+
+                  <!-- Vendor Card 2 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+                      <strong style="color: var(--text); font-size: 1.15rem;">ABC Electricals</strong>
+                      <span style="color: var(--muted); display: flex; align-items: center; gap: 6px;">
+                        <span>📞</span> 91234 56789
+                      </span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: var(--bg); padding: 12px; border-radius: 6px;">
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Total Payable:</span>
+                        <strong style="color: #16a34a; font-size: 1.05rem;">₹0</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Last Purchase:</span>
+                        <span style="color: var(--text); font-size: 0.9rem;">18 Apr 2026</span>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">View</button>
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">Edit</button>
+                      <a href="tel:9123456789" class="button button--primary button--small" style="flex: 1; text-decoration: none; text-align: center;">Call</a>
+                    </div>
+                  </div>
+
+                  <!-- Vendor Card 3 -->
+                  <div style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px;">
+                      <strong style="color: var(--text); font-size: 1.15rem;">Mumbai Hardware Co.</strong>
+                      <span style="color: var(--muted); display: flex; align-items: center; gap: 6px;">
+                        <span>📞</span> 99887 76655
+                      </span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; background: var(--bg); padding: 12px; border-radius: 6px;">
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Total Payable:</span>
+                        <strong style="color: #f59e0b; font-size: 1.05rem;">₹8,500</strong>
+                      </div>
+                      <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Last Purchase:</span>
+                        <span style="color: var(--text); font-size: 0.9rem;">15 Apr 2026</span>
+                      </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">View</button>
+                      <button class="button button--secondary button--small" type="button" style="flex: 1;">Edit</button>
+                      <a href="tel:9988776655" class="button button--primary button--small" style="flex: 1; text-decoration: none; text-align: center;">Call</a>
+                    </div>
+                  </div>
+
+                  <!-- Load More -->
+                  <button class="button button--secondary" type="button" style="width: 100%; margin-top: 8px;">Load More</button>
+
+                </div>
+              </article>
+            </section>
+
+            <!-- View: Inventory -->
+            <section id="product-inventory-view" class="product-view is-active" data-product-view="inventory">
+              <!-- Header: Search + Action Buttons -->
+              <div class="inventory-header">
+              <div class="inventory-search-bar">
+                <input id="inventory-search" type="search" placeholder="Search products or barcode..." autocomplete="off">
+              </div>
+              <div class="inventory-top-actions">
+                <button id="btn-add-new-product" class="button button--primary" type="button">+ Add New Product</button>
+                <button id="btn-bulk-import" class="button button--secondary" type="button">Bulk Import CSV</button>
+                <input id="bulk-import-file" type="file" accept=".csv,text/csv" hidden>
+              </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div id="low-stock-alert-section" class="inventory-alerts" hidden>
+              <div class="alert-banner">
+                <span class="alert-icon">⚠️</span>
+                <div>
+                  <strong>Low Stock Alert (<span id="low-stock-count">0</span> items)</strong>
+                  <ul id="low-stock-list" class="alert-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Product List -->
+            <div id="product-inventory-list" class="product-list-container"></div>
+
+            <!-- FAB: Mobile Add Button -->
+            <button id="fab-add-product" class="fab-button" type="button" aria-label="Add Product">+</button>
+
+            </section>
+
+            <!-- Modals -->
+            <!-- Add / Edit Product Modal -->
+            <dialog id="product-modal" class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3 id="product-modal-title">Add New Product</h3>
+                  <button id="close-product-modal" class="close-modal" type="button" aria-label="Close">&times;</button>
+                </div>
                 <form id="product-form" class="app-form">
+                  <input id="product-id" type="hidden">
                   <label>
-                    <span>Item name</span>
+                    <span>Item name <span class="field-required" aria-hidden="true">*</span></span>
                     <input id="product-name" name="productName" type="text" required>
                   </label>
                   <label>
@@ -631,31 +1031,65 @@
                     <input id="product-hsn" name="productHsn" type="text">
                   </label>
                   <label>
-                    <span>Price</span>
+                    <span>Price <span class="field-required" aria-hidden="true">*</span></span>
                     <input id="product-price" name="productPrice" type="number" min="0" step="0.01" required>
                   </label>
                   <label>
                     <span>GST %</span>
-                    <input id="product-gst" name="productGst" type="number" min="0" step="0.01" required>
+                    <input id="product-gst" name="productGst" type="number" min="0" step="0.01">
                   </label>
                   <label>
-                    <span>Opening Stock <small>(Optional)</small></span>
-                    <input type="number" id="product-stock" min="0" step="1" placeholder="e.g. 50">
+                    <span>Stock Quantity</span>
+                    <input id="product-stock" name="productStock" type="number" min="0" step="1" placeholder="e.g. 50">
                   </label>
-                  <button class="button button--primary" type="submit">Add product</button>
-                </form>
-              </article>
-
-              <article id="product-inventory-panel" class="panel module-card">
-                <div class="panel-head">
-                  <div>
-                    <h2>Inventory Levels</h2>
-                    <p>Track current stock levels and negative balances</p>
+                  <div class="modal-actions">
+                    <button id="product-cancel-btn" class="button button--secondary" type="button">Cancel</button>
+                    <button id="product-submit-btn" class="button button--primary" type="submit">Add Product</button>
                   </div>
+                </form>
+              </div>
+            </dialog>
+
+            <!-- Add / Edit Vendor Modal -->
+            <dialog id="vendor-modal" class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3 id="vendor-modal-title">Add New Vendor</h3>
+                  <button id="close-vendor-modal" class="close-modal" type="button" aria-label="Close">&times;</button>
                 </div>
-                <div id="product-inventory-list" class="data-list"></div>
-              </article>
-            </div>
+                <form id="vendor-form" class="app-form">
+                  <input id="vendor-id" type="hidden">
+                  <label>
+                    <span>Name <span class="field-required" aria-hidden="true">*</span></span>
+                    <input id="vendor-name" name="vendorName" type="text" placeholder="Sharma Pipe Traders" required>
+                  </label>
+                  <label>
+                    <span>Phone <span class="field-required" aria-hidden="true">*</span></span>
+                    <input id="vendor-phone" name="vendorPhone" type="tel" maxlength="10" placeholder="9876543210" required>
+                  </label>
+                  <label>
+                    <span>GSTIN (Optional)</span>
+                    <input id="vendor-gstin" name="vendorGstin" type="text" placeholder="27AABCT1234D1Z5">
+                  </label>
+                  <label>
+                    <span>State</span>
+                    <select id="vendor-state" name="vendorState">
+                      <!-- Populated via JS -->
+                      <option value="Maharashtra" selected>Maharashtra</option>
+                    </select>
+                  </label>
+                  <label class="field-span">
+                    <span>Opening Balance (₹)</span>
+                    <input id="vendor-opening-balance" name="vendorOpeningBalance" type="number" min="0" step="0.01" value="0.00">
+                  </label>
+                  <div class="modal-actions">
+                    <button id="vendor-cancel-btn" class="button button--secondary" type="button">Cancel</button>
+                    <button id="vendor-submit-btn" class="button button--primary" type="submit">Save Vendor</button>
+                  </div>
+                </form>
+              </div>
+            </dialog>
+
           </section>
 
           <section class="module-screen" data-module="admin">
@@ -808,10 +1242,11 @@
   <script src="js/dom-elements.js"></script>
   <script src="js/navigation.js"></script>
   <script src="js/modules/dashboard-module.js"></script>
-  <script src="js/modules/customers-module.js"></script>
-  <script src="js/modules/products-module.js"></script>
+  <script src="js/modules/inventory-module.js"></script>
   <script src="js/modules/quickbill-module.js"></script>
   <script src="js/modules/sales-module.js"></script>
+  <script src="js/modules/vendors-module.js"></script>
+  <script src="js/modules/purchase-module.js"></script>
   <script src="js/modules/admin-module.js"></script>
   <script src="js/modules/module-registry.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
@@ -1020,11 +1455,7 @@
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
+
   </script>
 </body>
 </html>
-
-
-
-
-

@@ -5,7 +5,9 @@ window.Unidex = window.Unidex || {};
   function list() {
     return [
       ns.modules.admin,
-      ns.modules.products,
+      ns.modules.inventory,
+      ns.modules.vendors,
+      ns.modules.purchase,
       ns.modules.dashboard,
       ns.modules.quickbill,
       ns.modules.sales

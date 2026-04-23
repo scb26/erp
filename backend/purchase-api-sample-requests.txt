@@ -1,0 +1,138 @@
+UNIDEX ERP
+PURCHASE API SAMPLE REQUESTS
+
+1. CREATE VENDOR
+POST /vendors
+Content-Type: application/json
+
+{
+  "name": "Shree Balaji Traders",
+  "phone": "9876543210",
+  "address": "12 Market Yard, Nashik, Maharashtra",
+  "gstin": "27ABCDE1234F1Z5",
+  "state": "Maharashtra",
+  "pan": "ABCDE1234F",
+  "email": "balaji@example.com",
+  "opening_balance": 15000,
+  "is_active": true
+}
+
+
+2. UPDATE VENDOR
+PUT /vendors/:id
+Content-Type: application/json
+
+{
+  "name": "Shree Balaji Traders Pvt Ltd",
+  "phone": "9876543210",
+  "address": "14 Market Yard, Nashik, Maharashtra",
+  "gstin": "27ABCDE1234F1Z5",
+  "state": "Maharashtra",
+  "pan": "ABCDE1234F",
+  "email": "accounts@balaji.example.com",
+  "opening_balance": 12000,
+  "is_active": true
+}
+
+
+3. CREATE PURCHASE BILL
+POST /purchase-bills
+Content-Type: application/json
+
+{
+  "bill_number": "PUR-2026-001",
+  "bill_date": "2026-04-23",
+  "vendor_id": 1,
+  "subtotal": 10000,
+  "total_gst": 1800,
+  "grand_total": 11800,
+  "amount_paid": 5000,
+  "payment_method": "bank",
+  "status": "partial",
+  "notes": "Initial stock purchase",
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 10,
+      "purchase_rate": 500,
+      "gst_rate": 18,
+      "line_total": 5900
+    },
+    {
+      "product_id": 2,
+      "quantity": 5,
+      "purchase_rate": 1000,
+      "gst_rate": 18,
+      "line_total": 5900
+    }
+  ]
+}
+
+
+4. UPDATE PURCHASE BILL
+PUT /purchase-bills/:id
+Content-Type: application/json
+
+{
+  "bill_number": "PUR-2026-001",
+  "bill_date": "2026-04-23",
+  "vendor_id": 1,
+  "subtotal": 12000,
+  "total_gst": 2160,
+  "grand_total": 14160,
+  "amount_paid": 14160,
+  "payment_method": "bank",
+  "status": "paid",
+  "notes": "Updated after final quantity confirmation",
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 12,
+      "purchase_rate": 500,
+      "gst_rate": 18,
+      "line_total": 7080
+    },
+    {
+      "product_id": 2,
+      "quantity": 6,
+      "purchase_rate": 1000,
+      "gst_rate": 18,
+      "line_total": 7080
+    }
+  ]
+}
+
+
+5. CREATE PURCHASE BILL ITEM
+POST /purchase-bill-items
+Content-Type: application/json
+
+{
+  "purchase_bill_id": 1,
+  "product_id": 1,
+  "quantity": 10,
+  "purchase_rate": 500,
+  "gst_rate": 18,
+  "line_total": 5900
+}
+
+
+6. UPDATE PURCHASE BILL ITEM
+PUT /purchase-bill-items/:id
+Content-Type: application/json
+
+{
+  "purchase_bill_id": 1,
+  "product_id": 1,
+  "quantity": 12,
+  "purchase_rate": 500,
+  "gst_rate": 18,
+  "line_total": 7080
+}
+
+
+RECOMMENDED TEST ORDER
+1. POST /vendors
+2. POST /purchase-bills
+3. GET /purchase-bills
+4. GET /purchase-bill-items

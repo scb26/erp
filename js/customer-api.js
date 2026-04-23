@@ -3,40 +3,41 @@ window.Unidex = window.Unidex || {};
 (function (ns) {
   var config = ns.config;
 
-  // All backend-facing customer requests live here so the UI can stay focused on rendering.
-  async function listCustomers() {
-    var response = await request("/customers", { method: "GET" });
-    return (response.data || []).map(normalizeCustomer);
+  function listCustomers() {
+    return request("/customers", { method: "GET" }).then(function(response) {
+      return (response.data || []).map(normalizeCustomer);
+    });
   }
 
-  async function getCustomer(id) {
-    var response = await request("/customers/" + encodeURIComponent(id), { method: "GET" });
-    return normalizeCustomer(response.data);
+  function getCustomer(id) {
+    return request("/customers/" + encodeURIComponent(id), { method: "GET" }).then(function(response) {
+      return normalizeCustomer(response.data);
+    });
   }
 
-  async function createCustomer(payload) {
-    var response = await request("/customers", {
+  function createCustomer(payload) {
+    return request("/customers", {
       method: "POST",
       body: JSON.stringify(payload)
+    }).then(function(response) {
+      return normalizeCustomer(response.data);
     });
-    return normalizeCustomer(response.data);
   }
 
-  async function updateCustomer(id, payload) {
-    var response = await request("/customers/" + encodeURIComponent(id), {
+  function updateCustomer(id, payload) {
+    return request("/customers/" + encodeURIComponent(id), {
       method: "PUT",
       body: JSON.stringify(payload)
+    }).then(function(response) {
+      return normalizeCustomer(response.data);
     });
-    return normalizeCustomer(response.data);
   }
 
-  async function deleteCustomer(id) {
+  function deleteCustomer(id) {
     return request("/customers/" + encodeURIComponent(id), { method: "DELETE" });
   }
 
-  async function request(path, options) {
-    var response;
-    var data;
+  function request(path, options) {
     var baseUrl = String(config.API.customerBaseUrl || "http://localhost:4000").replace(/\/$/, "");
     var requestOptions = Object.assign(
       {
@@ -47,40 +48,32 @@ window.Unidex = window.Unidex || {};
       options || {}
     );
 
-    try {
-      response = await window.fetch(baseUrl + path, requestOptions);
-    } catch (error) {
-      throw new Error("Customer backend is unreachable. Make sure the Node server is running on " + baseUrl + ".");
-    }
-
-    data = await response.json().catch(function () {
-      return {};
-    });
-
-    if (!response.ok) {
-      throw new Error(extractMessage(data, response.status));
-    }
-
-    return data;
+    return window.fetch(baseUrl + path, requestOptions)
+      .catch(function() {
+        throw new Error("Customer backend is unreachable. Make sure the Node server is running on " + baseUrl + ".");
+      })
+      .then(function(response) {
+        return response.json().then(function(data) {
+          if (!response.ok) {
+            throw new Error(extractMessage(data, response.status));
+          }
+          return data;
+        });
+      });
   }
 
   function extractMessage(data, statusCode) {
     if (data && Array.isArray(data.errors) && data.errors.length) {
       return data.errors.join(" | ");
     }
-
     if (data && data.message) {
       return data.message;
     }
-
     return "Request failed with status " + statusCode + ".";
   }
 
   function normalizeCustomer(record) {
-    if (!record) {
-      return null;
-    }
-
+    if (!record) return null;
     return {
       id: record.id,
       name: record.name || record.customer_name || "",

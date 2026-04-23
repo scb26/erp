@@ -9,13 +9,16 @@ window.Unidex = window.Unidex || {};
 
   // The bootstrap now focuses on app startup and lets each ERP module own its own behavior.
   async function init() {
+    console.log("🚀 Starting Unidex ERP...");
     var elements = dom.collect();
     var app;
-    var customerSyncError = "";
+    var loader = document.getElementById("global-sync-loader");
 
     if (!elements.isReady) {
       return;
     }
+
+    if (loader) loader.classList.remove("hidden");
 
     app = {
       elements: elements,
@@ -23,6 +26,7 @@ window.Unidex = window.Unidex || {};
       previewInvoice: null,
       activeModule: "dashboard",
       activeBillingView: "invoice",
+      activeProductView: "inventory",
       isSidebarCollapsed: window.localStorage.getItem(config.STORAGE_KEYS.sidebar) === "true"
     };
 
@@ -45,25 +49,44 @@ window.Unidex = window.Unidex || {};
       }
     };
 
+    app.setActiveInventoryView = function (viewKey) {
+      if (ns.modules.inventory && typeof ns.modules.inventory.setActiveInventoryView === "function") {
+        ns.modules.inventory.setActiveInventoryView(app, viewKey);
+      }
+    };
+
     populateStateOptions(app.elements.companyStateSelect);
     populateStateOptions(app.elements.customerStateSelect);
     bindGlobalEvents(app);
+
+    // Synchronize with live backend BEFORE initializing modules
+    try {
+      await stateStore.syncAll(app);
+      console.log("✅ Sync complete.");
+    } catch (err) {
+      console.warn("Initial sync had issues:", err.message);
+    }
+
     moduleRegistry.initAll(app);
     navigation.applySidebarState(app);
-
-    if (ns.modules.customers) {
-      ns.modules.customers.resetForm(app);
-      customerSyncError = await ns.modules.customers.syncFromBackend(app, false);
-    }
-
     app.setActiveModule(app.activeModule);
 
-    if (customerSyncError && ns.modules.customers) {
-      ns.modules.customers.setMessage(app, customerSyncError, "error");
-    }
+    // Emergency Unlock: If sync hangs for more than 10 seconds, force hide the loader
+    setTimeout(function () {
+      if (loader && !loader.classList.contains("hidden")) {
+        console.warn("Sync taking too long, emergency unlocking UI...");
+        loader.classList.add("hidden");
+      }
+    }, 10000);
 
     // Keeping the app object on the namespace helps future modules and debugging.
     ns.app = app;
+
+    if (loader) {
+      setTimeout(function() {
+        loader.classList.add("hidden");
+      }, 500);
+    }
   }
 
   function bindGlobalEvents(app) {
@@ -84,6 +107,15 @@ window.Unidex = window.Unidex || {};
 
       if (event.target.dataset.billingView && typeof app.setActiveBillingView === "function") {
         app.setActiveBillingView(event.target.dataset.billingView);
+        return;
+      }
+
+      if (event.target.dataset.subView) {
+        if (app.activeModule === "sales" && typeof app.setActiveBillingView === "function") {
+          app.setActiveBillingView(event.target.dataset.subView);
+        } else if (app.activeModule === "inventory" && typeof app.setActiveInventoryView === "function") {
+          app.setActiveInventoryView(event.target.dataset.subView);
+        }
         return;
       }
 

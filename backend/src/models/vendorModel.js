@@ -1,4 +1,8 @@
-const pool = require("../db/mysql");
+/**
+ * @module models/vendorModel
+ * @description Database operations for Vendor management.
+ */
+const { pool } = require("../db/mysql");
 
 function mapVendor(row) {
   return {
@@ -17,6 +21,12 @@ function mapVendor(row) {
   };
 }
 
+/**
+ * @function createVendor
+ * @description Inserts a new vendor record into the database.
+ * @param {Object} payload - Vendor details.
+ * @returns {Promise<Object>} The created vendor object.
+ */
 async function createVendor(payload) {
   const sql = `
     INSERT INTO vendors (

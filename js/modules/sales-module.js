@@ -6,7 +6,11 @@ window.Unidex = window.Unidex || {};
 
   ns.modules = ns.modules || {};
 
-  // Invoice module owns line items, GST calculations, preview rendering, and history.
+  /**
+   * @module SalesModule
+   * @description Handles B2B Tax Invoices, GST calculations, and customer management 
+   * within the Sales module.
+   */
   function init(app) {
     if (!app.activeBillingView) {
       app.activeBillingView = "invoice";
@@ -419,6 +423,15 @@ window.Unidex = window.Unidex || {};
     }).filter(Boolean);
   }
 
+  /**
+   * @function calculateTotals
+   * @description Core tax engine. Calculates Subtotal, CGST, SGST, and IGST based on 
+   * the relationship between the company state and the customer state.
+   * 
+   * Logic:
+   * - Same State: Intra-state (CGST + SGST)
+   * - Different State: Inter-state (IGST)
+   */
   function calculateTotals(app, customer, items) {
     var subtotal = 0;
     var cgst = 0;

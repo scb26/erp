@@ -1,3 +1,8 @@
+/**
+ * @file erp.js
+ * @description Main entry point for the Unidex ERP application. 
+ * Handles application bootstrapping, global state initialization, and core event orchestration.
+ */
 window.Unidex = window.Unidex || {};
 
 (function (ns) {
@@ -315,26 +320,137 @@ window.Unidex = window.Unidex || {};
     return vendor ? (vendor.balance || 0) : 0;
   }
 
+  /**
+   * @namespace Unidex.stateStore
+   * @description Centralized data management layer. Handles backend API communication, 
+   * local persistence (localStorage), and data normalization for the entire ERP system.
+   */
   ns.stateStore = {
+    /** 
+     * @function hydrate
+     * @description Loads data from localStorage into the application state.
+     * @returns {Object} Hydrated data object.
+     */
     hydrate: hydrate,
+
+    /**
+     * @function persist
+     * @description Saves the current application data to localStorage.
+     * @param {Object} data - The data object to persist.
+     */
     persist: persist,
+
+    /**
+     * @function syncAll
+     * @description Synchronizes all local data with the backend.
+     * @param {Object} app - The global application instance.
+     * @returns {Promise} Resolves when all data is fetched and persisted.
+     */
     syncAll: syncAll,
+
+    /**
+     * @function listCustomers
+     * @description Fetches all customers from the backend.
+     * @returns {Promise<Array>} List of normalized customer objects.
+     */
     listCustomers: listCustomers,
+
+    /**
+     * @function createCustomer
+     * @description Creates a new customer on the backend and triggers a sync.
+     * @param {Object} app - The global app instance.
+     * @param {Object} payload - Customer details.
+     */
     createCustomer: createCustomer,
+
+    /**
+     * @function updateCustomer
+     * @description Updates an existing customer on the backend.
+     */
     updateCustomer: updateCustomer,
+
+    /**
+     * @function deleteCustomer
+     * @description Deletes a customer from the backend.
+     */
     deleteCustomer: deleteCustomer,
+
+    /**
+     * @function getVendors
+     * @description Returns the list of vendors currently in memory.
+     */
     getVendors: getVendors,
+
+    /**
+     * @function addVendor
+     * @description Adds a new vendor to the backend and local state.
+     */
     addVendor: addVendor,
+
+    /**
+     * @function updateVendor
+     * @description Updates a vendor record.
+     */
     updateVendor: updateVendor,
+
+    /**
+     * @function deleteVendor
+     * @description Removes a vendor from the system.
+     */
     deleteVendor: deleteVendor,
+
+    /**
+     * @function getTotalPayableByVendor
+     * @description Calculates total outstanding balance for a specific vendor.
+     */
     getTotalPayableByVendor: getTotalPayableByVendor,
+
+    /**
+     * @function getInventoryItems
+     * @description Returns all products in the local state.
+     */
     getInventoryItems: getInventoryItems,
+
+    /**
+     * @function addInventoryItem
+     * @description Adds a new product to the system.
+     */
     addInventoryItem: addInventoryItem,
+
+    /**
+     * @function updateInventoryItem
+     * @description Updates product details (price, stock, etc).
+     */
     updateInventoryItem: updateInventoryItem,
+
+    /**
+     * @function deleteInventoryItem
+     * @description Deletes a product.
+     */
     deleteInventoryItem: deleteInventoryItem,
+
+    /**
+     * @function getPurchaseBills
+     * @description Returns purchase history.
+     */
     getPurchaseBills: getPurchaseBills,
+
+    /**
+     * @function savePurchaseBill
+     * @description Saves a new purchase bill to the backend.
+     */
     savePurchaseBill: savePurchaseBill,
+
+    /**
+     * @function recordPurchasePayment
+     * @description Records a payment against a purchase bill.
+     */
     recordPurchasePayment: recordPurchasePayment,
+
+    /**
+     * @function saveInvoice
+     * @description Saves a new sales invoice to the backend.
+     */
     saveInvoice: saveInvoice
   };
 })(window.Unidex);

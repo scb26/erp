@@ -40,6 +40,11 @@ window.Unidex = window.Unidex || {};
     }
   }
 
+  /**
+   * @module QuickBillModule
+   * @description A high-performance Point of Sale (POS) interface optimized for 
+   * rapid barcode scanning and one-click checkout.
+   */
   function init(app) {
     if (!app.quickBillCart) app.quickBillCart = [];
     if (app.quickBillInitialized) return;

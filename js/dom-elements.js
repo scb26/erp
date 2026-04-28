@@ -101,7 +101,7 @@ window.Unidex = window.Unidex || {};
       productGstInput: document.getElementById("product-gst"),
       productStockInput: document.getElementById("product-stock"),
       // Vendor Elements
-      vendorListContainer: document.querySelector(".vendor-list-container"),
+      vendorList: document.querySelector(".vendor-list-container"),
       btnAddVendor: document.getElementById("btn-add-vendor"),
       btnQuickAddVendor: document.getElementById("btn-quick-add-vendor"),
       vendorModal: document.getElementById("vendor-modal"),

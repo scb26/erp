@@ -1,3 +1,8 @@
+/**
+ * @module models/invoiceModel
+ * @description Database operations for Sales Invoices and Line Items. 
+ * Handles multi-table transactions for invoices and stock updates.
+ */
 const { pool, query } = require("../db/mysql");
 
 async function createInvoice(invoice) {
@@ -8,34 +13,41 @@ async function createInvoice(invoice) {
     // 1. Insert into invoices table
     const invoiceSql = `
       INSERT INTO invoices (
+        company_id,
         invoice_number,
         invoice_date,
         customer_id,
-        customer_name,
-        total_amount,
-        tax_amount,
-        grand_total,
-        paid_amount,
-        balance_due,
-        payment_method,
-        status,
-        notes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        place_of_supply_state,
+        supply_type,
+        notes,
+        subtotal_amount,
+        cgst_amount,
+        sgst_amount,
+        igst_amount,
+        grand_total_amount,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    const totals = invoice.totals || {};
+    const companyId = invoice.company?.id || 1; // Default to 1 if not provided
+    const placeOfSupply = invoice.customer?.state || "";
+    const supplyType = (invoice.company?.state === invoice.customer?.state) ? "intra_state" : "inter_state";
+
     const [invoiceResult] = await connection.execute(invoiceSql, [
+      companyId,
       invoice.invoiceNumber,
-      invoice.date,
-      invoice.customerId,
-      invoice.customerName,
-      invoice.totalAmount || 0,
-      invoice.taxAmount || 0,
-      invoice.grandTotal || 0,
-      invoice.paidAmount || 0,
-      invoice.balanceDue || 0,
-      invoice.paymentMethod || "Cash",
-      invoice.status || "unpaid",
-      invoice.notes || ""
+      invoice.invoiceDate,
+      invoice.customer?.id,
+      placeOfSupply,
+      supplyType,
+      invoice.notes || "",
+      totals.subtotal || 0,
+      totals.cgst || 0,
+      totals.sgst || 0,
+      totals.igst || 0,
+      totals.grandTotal || 0,
+      invoice.paymentStatus || "draft"
     ]);
 
     const invoiceId = invoiceResult.insertId;
@@ -46,32 +58,41 @@ async function createInvoice(invoice) {
         INSERT INTO invoice_items (
           invoice_id,
           product_id,
-          product_name,
+          line_number,
+          item_name,
+          hsn_sac_code,
           quantity,
-          rate,
+          unit_rate,
           gst_rate,
-          tax_amount,
-          total_amount
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          taxable_value,
+          line_total_amount
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      for (const item of invoice.items) {
+      for (var i = 0; i < invoice.items.length; i++) {
+        var item = invoice.items[i];
+        var taxableValue = (item.quantity || 0) * (item.rate || 0);
+        var taxAmount = taxableValue * (item.gstRate || 0) / 100;
+        var lineTotal = taxableValue + taxAmount;
+
         await connection.execute(itemSql, [
           invoiceId,
           item.productId,
+          i + 1,
           item.name,
-          item.qty,
-          item.rate,
+          item.hsn || "",
+          item.quantity || 0,
+          item.rate || 0,
           item.gstRate || 0,
-          item.taxAmount || 0,
-          item.total || 0
+          taxableValue,
+          lineTotal
         ]);
 
         // 3. Update product stock (decrement)
         if (item.productId) {
           await connection.execute(
             "UPDATE products SET stock = stock - ? WHERE id = ?",
-            [item.qty, item.productId]
+            [item.quantity, item.productId]
           );
         }
       }
@@ -80,7 +101,6 @@ async function createInvoice(invoice) {
     await connection.commit();
     return invoiceId;
   } catch (err) {
-    // TODO: Handle stock reversal if this was an update/cancellation flow
     await connection.rollback();
     throw err;
   } finally {
@@ -91,7 +111,7 @@ async function createInvoice(invoice) {
 async function getAllInvoices() {
   const sql = `
     SELECT 
-      id, invoice_number, invoice_date, customer_name, grand_total, status, created_at 
+      id, invoice_number, invoice_date, grand_total_amount as grand_total, status, created_at 
     FROM invoices 
     ORDER BY created_at DESC
   `;
@@ -100,7 +120,7 @@ async function getAllInvoices() {
 
 async function getInvoiceById(id) {
   // Get invoice header
-  const headerSql = "SELECT * FROM invoices WHERE id = ? LIMIT 1";
+  const headerSql = "SELECT *, grand_total_amount as grand_total FROM invoices WHERE id = ? LIMIT 1";
   const headers = await query(headerSql, [id]);
   if (headers.length === 0) return null;
 

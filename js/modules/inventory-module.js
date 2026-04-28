@@ -4,6 +4,11 @@ window.Unidex = window.Unidex || {};
   var utils = ns.utils;
   var stateStore = ns.stateStore;
 
+  /**
+   * @module InventoryModule
+   * @description Manages product catalog, stock levels, and HSN/GST configurations.
+   */
+
   var uiState = {
     searchQuery: ""
   };

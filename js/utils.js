@@ -67,6 +67,29 @@ window.Unidex = window.Unidex || {};
     return current;
   }
 
+  function showToast(message, type) {
+    var toast = document.getElementById("global-toast");
+    if (!toast) return;
+    
+    toast.textContent = message;
+    toast.className = "global-toast"; // reset classes
+    
+    if (type === "success") {
+      toast.classList.add("toast-success");
+    }
+    
+    toast.classList.remove("hidden");
+    
+    // Clear any existing timeout
+    if (toast.hideTimeout) {
+      clearTimeout(toast.hideTimeout);
+    }
+    
+    toast.hideTimeout = setTimeout(function() {
+      toast.classList.add("hidden");
+    }, 4000);
+  }
+
   ns.utils = {
     readJSON: readJSON,
     formatCurrency: formatCurrency,
@@ -75,6 +98,7 @@ window.Unidex = window.Unidex || {};
     createId: createId,
     clone: clone,
     escapeHtml: escapeHtml,
-    getSafe: getSafe
+    getSafe: getSafe,
+    showToast: showToast
   };
 })(window.Unidex);

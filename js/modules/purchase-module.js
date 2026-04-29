@@ -281,7 +281,7 @@ window.Unidex = window.Unidex || {};
     if (countBadge) countBadge.textContent = filtered.length + " bills";
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 24px;">No purchase records found.</div>';
+      listContainer.innerHTML = '<div class="text-muted" style="text-align: center; padding: 24px;">No purchase records found.</div>';
       return;
     }
 
@@ -292,24 +292,25 @@ window.Unidex = window.Unidex || {};
         statusClass = p.paid > 0 ? "status-badge--partial" : "status-badge--unpaid";
         statusText = p.paid > 0 ? "PARTIAL" : "UNPAID";
       }
+      var dueColorClass = p.due > 0 ? "text-warning" : "text-muted";
 
-      return '<div class="data-card" style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">' +
-        '<div style="display: flex; justify-content: space-between; margin-bottom: 8px;">' +
-          '<strong style="color: var(--text); font-size: 1.1rem;">' + utils.escapeHtml(p.billNo) + '</strong>' +
-          '<span style="color: var(--muted);">' + utils.escapeHtml(p.date) + '</span>' +
+      return '<div class="data-card list-card">' +
+        '<div class="list-card-header">' +
+          '<strong class="list-card-title">' + utils.escapeHtml(p.billNo) + '</strong>' +
+          '<span class="text-muted">' + utils.escapeHtml(p.date) + '</span>' +
         '</div>' +
-        '<div style="color: var(--text); margin-bottom: 16px; font-weight: 500;">' +
+        '<div class="list-card-subtitle">' +
           utils.escapeHtml(p.vendorName) +
         '</div>' +
-        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">' +
-          '<div><span style="color: var(--muted); font-size: 0.85rem;">Grand Total:</span> <strong style="color: var(--text);">₹' + (p.grandTotal || 0).toLocaleString("en-IN") + '</strong></div>' +
-          '<div style="text-align: right;"><span class="status-badge ' + statusClass + '">' + statusText + '</span></div>' +
+        '<div class="list-card-grid">' +
+          '<div><span class="text-muted text-small">Grand Total:</span> <strong style="color: var(--text);">₹' + (p.grandTotal || 0).toLocaleString("en-IN") + '</strong></div>' +
+          '<div class="text-right"><span class="status-badge ' + statusClass + '">' + statusText + '</span></div>' +
         '</div>' +
-        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; font-size: 0.9rem;">' +
-          '<div style="color: #16a34a;">Paid: ₹' + (p.paid || 0).toLocaleString("en-IN") + '</div>' +
-          '<div style="text-align: right; color: ' + (p.due > 0 ? "#f59e0b" : "var(--muted)") + ';">Due: ₹' + (p.due || 0).toLocaleString("en-IN") + '</div>' +
+        '<div class="list-card-grid list-card-grid--spaced">' +
+          '<div class="text-success">Paid: ₹' + (p.paid || 0).toLocaleString("en-IN") + '</div>' +
+          '<div class="text-right ' + dueColorClass + '">Due: ₹' + (p.due || 0).toLocaleString("en-IN") + '</div>' +
         '</div>' +
-        '<div style="display: flex; gap: 8px; border-top: 1px dashed var(--border); padding-top: 16px;">' +
+        '<div class="list-card-actions list-card-actions--bordered">' +
           '<button class="button button--secondary button--small" type="button">View</button>' +
           '<button class="button button--secondary button--small" type="button">PDF</button>' +
           '<button class="button button--secondary button--small record-payment-btn" data-id="' + utils.escapeHtml(p.billNo) + '" type="button">Pay</button>' +

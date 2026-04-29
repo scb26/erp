@@ -3395,3 +3395,139 @@ body.hide-site-header .site-header {
 .product-view.is-active {
   display: block;
 }
+
+/* =========================================
+   UI Components (Migrated from Inline Styles)
+   ========================================= */
+
+/* PWA Install Banner */
+#pwa-install-banner {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(86, 190, 255, 0.3);
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(86,190,255,0.1);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 300px;
+  max-width: 90vw;
+  animation: slideUp 0.4s ease;
+  backdrop-filter: blur(12px);
+}
+#pwa-install-banner.hidden { display: none !important; }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+#pwa-install-banner img { width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0; }
+.pwa-banner__text { flex: 1; }
+.pwa-banner__text strong { display: block; color: #fff; font-size: 0.95rem; font-weight: 600; }
+.pwa-banner__text span { color: rgba(255,255,255,0.6); font-size: 0.8rem; }
+.pwa-banner__actions { display: flex; gap: 8px; flex-shrink: 0; }
+#pwa-install-btn {
+  background: #56beff; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s;
+}
+#pwa-install-btn:hover { opacity: 0.85; }
+#pwa-dismiss-btn {
+  background: transparent; color: rgba(255,255,255,0.5); border: none; padding: 8px; border-radius: 8px; font-size: 1.1rem; cursor: pointer; line-height: 1; transition: color 0.2s;
+}
+#pwa-dismiss-btn:hover { color: #fff; }
+
+/* Offline indicator */
+#offline-toast {
+  display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9998; background: #ff6b6b; color: #fff; padding: 8px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; box-shadow: 0 4px 16px rgba(255,107,107,0.4);
+}
+#offline-toast.show { display: block; }
+
+/* Global Sync Loader Styles */
+#global-sync-loader {
+  position: fixed; inset: 0; background: #0f0f12; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s ease, visibility 0.4s;
+}
+#global-sync-loader.hidden { opacity: 0; visibility: hidden; }
+.loader-spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #56beff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+.loader-text { color: #fff; font-weight: 500; letter-spacing: 0.5px; }
+
+/* Global Error Toast */
+.global-toast {
+  position: fixed;
+  bottom: 80px; /* Clears mobile PWA nav */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ef4444; /* red-500 */
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
+  font-weight: 500;
+  z-index: 10000;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+.global-toast.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+.global-toast.toast-success {
+  background: #10b981; /* emerald-500 */
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+}
+
+/* Extracted Card Utility Classes */
+.list-card {
+  background: var(--bg-strong);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.list-card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.list-card-header--align-start {
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.list-card-title {
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: block;
+}
+.list-card-subtitle {
+  color: var(--text);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.list-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.list-card-grid--spaced {
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+.list-card-actions {
+  display: flex;
+  gap: 8px;
+}
+.list-card-actions--bordered {
+  border-top: 1px dashed var(--border);
+  padding-top: 16px;
+}
+.text-right { text-align: right; }
+.text-success { color: #16a34a; }
+.text-warning { color: #f59e0b; }
+.text-danger { color: #ef4444; }
+.text-muted { color: var(--muted); }
+.text-small { font-size: 0.85rem; }
+.flex-1 { flex: 1; }

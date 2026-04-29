@@ -53,22 +53,22 @@ window.Unidex = window.Unidex || {};
     });
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 24px;">No vendors found.</div>';
+      listContainer.innerHTML = '<div class="text-muted" style="text-align: center; padding: 24px;">No vendors found.</div>';
       return;
     }
 
     listContainer.innerHTML = filtered.map(function (v) {
-      return '<div class="data-card" style="background: var(--bg-strong); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">' +
-        '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
+      return '<div class="data-card list-card">' +
+        '<div class="list-card-header list-card-header--align-start">' +
           '<div>' +
-            '<strong style="color: var(--text); font-size: 1.1rem; display: block; margin-bottom: 2px;">' + utils.escapeHtml(v.name || "Unnamed") + '</strong>' +
-            '<span style="color: var(--muted); font-size: 0.85rem;">Phone: ' + utils.escapeHtml(v.phone || "N/A") + '</span>' +
+            '<strong class="list-card-title" style="margin-bottom: 2px;">' + utils.escapeHtml(v.name || "Unnamed") + '</strong>' +
+            '<span class="text-muted text-small">Phone: ' + utils.escapeHtml(v.phone || "N/A") + '</span>' +
           '</div>' +
           '<span class="badge badge--primary">₹' + (v.balance || 0).toLocaleString("en-IN") + ' Payable</span>' +
         '</div>' +
-        '<div style="display: flex; gap: 8px;">' +
-          '<button class="button button--secondary button--small edit-vendor-btn" data-id="' + utils.escapeHtml(v.id) + '" type="button" style="flex: 1;">Edit</button>' +
-          '<button class="button button--secondary button--small delete-vendor-btn" data-id="' + utils.escapeHtml(v.id) + '" type="button" style="flex: 1; border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">Delete</button>' +
+        '<div class="list-card-actions">' +
+          '<button class="button button--secondary button--small edit-vendor-btn flex-1" data-id="' + utils.escapeHtml(v.id) + '" type="button">Edit</button>' +
+          '<button class="button button--secondary button--small delete-vendor-btn flex-1 text-danger" data-id="' + utils.escapeHtml(v.id) + '" type="button" style="border-color: rgba(239, 68, 68, 0.3);">Delete</button>' +
         '</div>' +
       '</div>';
     }).join("");

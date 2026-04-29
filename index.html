@@ -16,9 +16,12 @@
   <link rel="icon" type="image/png" sizes="192x192" href="pwa/icons/icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="pwa/icons/icon-512.png">
   <script>
-    // Diagnostic Helper: Catch and alert startup errors
+    // Diagnostic Helper: Catch and log startup errors
     window.onerror = function(msg, url, line) {
-      alert("Application Error: " + msg + "\nAt: " + url + ":" + line);
+      console.error("Application Error: " + msg + "\nAt: " + url + ":" + line);
+      if (window.Unidex && window.Unidex.utils && window.Unidex.utils.showToast) {
+        window.Unidex.utils.showToast("App Error: " + msg, "error");
+      }
       const loader = document.getElementById("global-sync-loader");
       if (loader) loader.classList.add("hidden"); // Emergency hide on crash
     };
@@ -36,109 +39,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="pwa/mobile-nav.css">
 
-  <style>
-    /* PWA Install Banner */
-    #pwa-install-banner {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      border: 1px solid rgba(86, 190, 255, 0.3);
-      border-radius: 16px;
-      padding: 14px 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(86,190,255,0.1);
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      min-width: 300px;
-      max-width: 90vw;
-      animation: slideUp 0.4s ease;
-      backdrop-filter: blur(12px);
-    }
-    #pwa-install-banner.hidden { display: none !important; }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-    #pwa-install-banner img {
-      width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-    }
-    .pwa-banner__text { flex: 1; }
-    .pwa-banner__text strong {
-      display: block; color: #fff; font-size: 0.95rem; font-weight: 600;
-    }
-    .pwa-banner__text span {
-      color: rgba(255,255,255,0.6); font-size: 0.8rem;
-    }
-    .pwa-banner__actions { display: flex; gap: 8px; flex-shrink: 0; }
-    #pwa-install-btn {
-      background: #56beff; color: #000; border: none;
-      padding: 8px 16px; border-radius: 8px; font-weight: 600;
-      font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s;
-    }
-    #pwa-install-btn:hover { opacity: 0.85; }
-    #pwa-dismiss-btn {
-      background: transparent; color: rgba(255,255,255,0.5); border: none;
-      padding: 8px; border-radius: 8px; font-size: 1.1rem; cursor: pointer;
-      line-height: 1; transition: color 0.2s;
-    }
-    #pwa-dismiss-btn:hover { color: #fff; }
 
-    /* Offline indicator */
-    #offline-toast {
-      display: none;
-      position: fixed;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9998;
-      background: #ff6b6b;
-      color: #fff;
-      padding: 8px 18px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      box-shadow: 0 4px 16px rgba(255,107,107,0.4);
-    }
-    #offline-toast.show { display: block; }
-
-    /* Global Sync Loader Styles */
-    #global-sync-loader {
-      position: fixed;
-      inset: 0;
-      background: #0f0f12; /* Match theme-dark bg */
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.4s ease, visibility 0.4s;
-    }
-    #global-sync-loader.hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-    .loader-spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(255,255,255,0.1);
-      border-top-color: #56beff; /* Match primary color */
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .loader-text {
-      color: #fff;
-      font-weight: 500;
-      letter-spacing: 0.5px;
-    }
-  </style>
 </head>
 <body class="theme-dark">
   <div id="global-sync-loader">
@@ -771,7 +672,7 @@
                 <div class="panel-head">
                   <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <h2>Purchase History</h2>
-                    <span style="color: var(--muted); font-size: 0.9rem;">47 bills</span>
+                    <span id="purchase-history-count" style="color: var(--muted); font-size: 0.9rem;"></span>
                   </div>
                 </div>
                 
@@ -797,7 +698,7 @@
                 <div class="panel-head">
                   <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <h2>Vendors</h2>
-                    <span style="background: var(--accent-soft); color: var(--accent-strong); padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 500;">12</span>
+                    <span id="vendor-list-count" style="background: var(--accent-soft); color: var(--accent-strong); padding: 4px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 500;"></span>
                   </div>
                 </div>
                 
@@ -1296,5 +1197,8 @@
     updateOnlineStatus();
 
   </script>
+
+  <!-- Global Toast Notification Container -->
+  <div id="global-toast" class="global-toast hidden"></div>
 </body>
 </html>

@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "concurrently \"node static-server.js\" \"cd backend && npm start\"",
     "start": "node static-server.js",
-    "backend": "python main.py",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

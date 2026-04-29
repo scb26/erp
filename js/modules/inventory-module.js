@@ -17,15 +17,21 @@ window.Unidex = window.Unidex || {};
   function init(app) {
     if (!app.elements.productForm) return;
 
-    if (app.elements.productSearchInput) {
-      app.elements.productSearchInput.addEventListener("input", function (e) {
+    if (app.elements.inventorySearchInput) {
+      app.elements.inventorySearchInput.addEventListener("input", function (e) {
         uiState.searchQuery = e.target.value.toLowerCase();
         render(app);
       });
     }
 
-    if (app.elements.btnAddProduct) {
-      app.elements.btnAddProduct.addEventListener("click", function () {
+    if (app.elements.btnAddNewProduct) {
+      app.elements.btnAddNewProduct.addEventListener("click", function () {
+        openModal(app, null);
+      });
+    }
+
+    if (app.elements.fabAddProduct) {
+      app.elements.fabAddProduct.addEventListener("click", function () {
         openModal(app, null);
       });
     }
@@ -114,7 +120,6 @@ window.Unidex = window.Unidex || {};
         '</div>' +
         '<div style="display: flex; gap: 8px;">' +
           '<button class="button button--secondary button--small edit-btn" data-id="' + utils.escapeHtml(p.id) + '" type="button" style="flex: 1;">Edit</button>' +
-          '<button class="button button--secondary button--small" type="button" style="flex: 1;">History</button>' +
         '</div>' +
       '</div>';
     }).join("");

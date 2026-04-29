@@ -835,116 +835,261 @@
           </section>
 
           <section class="module-screen" data-module="admin">
-            <div class="content-grid content-grid--two">
-              <article id="admin-company" class="panel module-card">
+            <div id="admin-tab-profile" class="admin-tab-content">
+              <div class="wizard-layout">
+                <article id="admin-company" class="panel module-card">
                 <div class="panel-head">
                   <div>
-                    <h2>Business details</h2>
+                    <h2>Business Setup</h2>
                   </div>
                 </div>
+
+                <div class="wizard-stepper">
+                  <div class="wizard-step-indicator is-active" data-indicator="1">
+                    <div class="wizard-step-dot">1</div>
+                    <div class="wizard-step-label">Identity</div>
+                  </div>
+                  <div class="wizard-step-indicator" data-indicator="2">
+                    <div class="wizard-step-dot">2</div>
+                    <div class="wizard-step-label">Contact</div>
+                  </div>
+                  <div class="wizard-step-indicator" data-indicator="3">
+                    <div class="wizard-step-dot">3</div>
+                    <div class="wizard-step-label">Billing</div>
+                  </div>
+                </div>
+
                 <form id="company-form" class="app-form">
-                  <div class="company-assets field-span">
-                    <label class="upload-card upload-card--logo" for="company-logo">
-                      <span class="upload-card__title">Add Logo</span>
-                      <span id="company-logo-preview" class="upload-card__preview upload-card__preview--logo">
-                        <span class="upload-card__empty">Add Logo</span>
-                      </span>
-                      <span class="upload-card__hint">Upload company logo</span>
+                  <input id="company-logo-data" name="companyLogoData" type="hidden">
+                  <input id="company-signature-data" name="companySignatureData" type="hidden">
+                  
+                  <p id="company-form-message" class="form-message field-span" aria-live="polite" style="margin-bottom: 16px;"></p>
+
+                  <!-- ============================================== -->
+                  <!-- STEP 1: IDENTITY                               -->
+                  <!-- ============================================== -->
+                  <div class="wizard-step-content is-active" data-step="1">
+                    <div class="field-span" style="margin-bottom: 16px; max-width: 240px;">
+                      <label class="upload-card upload-card--logo" for="company-logo">
+                        <span class="upload-card__title">Add Logo</span>
+                        <span id="company-logo-preview" class="upload-card__preview upload-card__preview--logo">
+                          <span class="upload-card__empty">Add Logo</span>
+                        </span>
+                        <span class="upload-card__hint">Upload company logo</span>
+                      </label>
+                      <input id="company-logo" name="companyLogo" type="file" accept="image/*" class="visually-hidden">
+                    </div>
+
+                    <label>
+                      <span>Business Name <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-name" name="companyName" type="text" placeholder="e.g. Sharma Pipe Traders" required>
                     </label>
-                    <label class="upload-card upload-card--signature" for="company-signature">
-                      <span class="upload-card__title">Add Signature</span>
-                      <span id="company-signature-preview" class="upload-card__preview upload-card__preview--signature">
-                        <span class="upload-card__empty">Add Signature</span>
-                      </span>
-                      <span class="upload-card__hint">Upload signing authority</span>
+                    <label>
+                      <span>Trade / Brand Name (Optional)</span>
+                      <input id="company-trade-name" name="companyTradeName" type="text" placeholder="e.g. SPT Store">
                     </label>
-                    <input id="company-logo" name="companyLogo" type="file" accept="image/*" class="visually-hidden">
-                    <input id="company-signature" name="companySignature" type="file" accept="image/*" class="visually-hidden">
-                    <input id="company-logo-data" name="companyLogoData" type="hidden">
-                    <input id="company-signature-data" name="companySignatureData" type="hidden">
-                  </div>
-                  <div class="form-section field-span">
-                    <div class="form-section__head">
-                      <h3>Business details</h3>
-                      <p>Primary identity details used across invoices and GST records.</p>
+
+                    <label class="field-span">
+                      <span>GSTIN (Optional)</span>
+                      <div class="input-group">
+                        <input id="company-gstin" name="companyGstin" type="text" maxlength="15" placeholder="e.g. 27AABCT1234D1Z5" style="text-transform: uppercase;">
+                        <button type="button" id="btn-fetch-gstin" class="button button--secondary">Fetch</button>
+                      </div>
+                    </label>
+
+                    <label>
+                      <span>PAN Number (Optional)</span>
+                      <input id="company-pan" name="companyPan" type="text" maxlength="10" placeholder="e.g. ABCDE1234F" style="text-transform: uppercase;">
+                    </label>
+
+                    <label>
+                      <span>Business Type</span>
+                      <select id="company-business-type" name="companyBusinessType">
+                        <option value="Sole Proprietorship">Sole Proprietorship</option>
+                        <option value="Partnership Firm">Partnership Firm</option>
+                        <option value="Limited Liability Partnership">Limited Liability Partnership</option>
+                        <option value="Private Limited Company">Private Limited Company</option>
+                        <option value="Public Limited Company">Public Limited Company</option>
+                        <option value="One Person Company">One Person Company</option>
+                      </select>
+                    </label>
+
+                    <label class="field-span">
+                      <span>Nature of Business</span>
+                      <select id="company-business-category" name="companyBusinessCategory">
+                        <option value="Trading">Trading</option>
+                        <option value="Services">Services</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Wholesale">Wholesale</option>
+                        <option value="Technology">Technology</option>
+                      </select>
+                    </label>
+
+                    <div class="button-row field-span" style="justify-content: flex-end; margin-top: 24px;">
+                      <button class="button button--primary btn-wizard-next" type="button" data-next="2">Next Step</button>
                     </div>
                   </div>
-                  <label>
-                    <span>Company name <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-name" name="companyName" type="text" required>
-                  </label>
-                  <label>
-                    <span>GSTIN <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-gstin" name="companyGstin" type="text" maxlength="15" required>
-                  </label>
-                  <label>
-                    <span>PAN <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-pan" name="companyPan" type="text" maxlength="10" placeholder="ABCDE1234F" required>
-                  </label>
-                  <label>
-                    <span>Phone number <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-phone" name="companyPhone" type="tel" maxlength="10" placeholder="9876543210" required>
-                  </label>
-                  <label>
-                    <span>State <span class="field-required" aria-hidden="true">*</span></span>
-                    <select id="company-state" name="companyState" required></select>
-                  </label>
-                  <label><span>UPI ID (for POS Payments)</span><input type="text" id="admin-company-upi" placeholder="merchant@upi" pattern="^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$"></label>
-                  <label>
-                    <span>Pincode <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-pincode" name="companyPincode" type="text" maxlength="6" placeholder="411001" required>
-                  </label>
-                  <label class="field-span">
-                    <span>Address <span class="field-required" aria-hidden="true">*</span></span>
-                    <textarea id="company-address" name="companyAddress" rows="3" required></textarea>
-                  </label>
-                  <div class="form-section field-span">
-                    <div class="form-section__head">
-                      <h3>More Business Details</h3>
-                      <p>Operational defaults that keep your invoices and business metadata consistent.</p>
+
+                  <!-- ============================================== -->
+                  <!-- STEP 2: CONTACT & ADDRESS                      -->
+                  <!-- ============================================== -->
+                  <div class="wizard-step-content" data-step="2">
+                    <label>
+                      <span>Mobile Number <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-phone" name="companyPhone" type="tel" maxlength="10" placeholder="9876543210" required>
+                    </label>
+                    <label>
+                      <span>Alternate Mobile (Optional)</span>
+                      <input id="company-alt-phone" name="companyAltPhone" type="tel" maxlength="10" placeholder="Alternate contact">
+                    </label>
+                    <label>
+                      <span>Email Address (Optional)</span>
+                      <input id="company-email" name="companyEmail" type="email" placeholder="accounts@example.com">
+                    </label>
+                    <label>
+                      <span>Website (Optional)</span>
+                      <input id="company-website" name="companyWebsite" type="url" placeholder="https://www.example.com">
+                    </label>
+
+                    <div class="form-section field-span" style="margin-top: 16px;">
+                      <div class="form-section__head">
+                        <h3>Address</h3>
+                      </div>
+                    </div>
+
+                    <label class="field-span">
+                      <span>Pincode <span class="field-required" aria-hidden="true">*</span></span>
+                      <div class="input-group">
+                        <input id="company-pincode" name="companyPincode" type="text" maxlength="6" placeholder="e.g. 411001" required>
+                        <button type="button" id="btn-fetch-pincode" class="button button--secondary">Auto-fill</button>
+                      </div>
+                    </label>
+
+                    <label>
+                      <span>City <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-city" name="companyCity" type="text" required>
+                    </label>
+                    <label>
+                      <span>State <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-state" name="companyState" type="text" required>
+                    </label>
+
+                    <label class="field-span">
+                      <span>Address Line 1 <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-address" name="companyAddress" type="text" placeholder="Shop / Flat No, Building Name" required>
+                    </label>
+                    <label class="field-span">
+                      <span>Address Line 2 (Optional)</span>
+                      <input id="company-address-line2" name="companyAddressLine2" type="text" placeholder="Street, Landmark, Area">
+                    </label>
+
+                    <div class="button-row field-span" style="justify-content: space-between; margin-top: 24px;">
+                      <button class="button button--secondary btn-wizard-back" type="button" data-back="1">Back</button>
+                      <button class="button button--primary btn-wizard-next" type="button" data-next="3">Next Step</button>
                     </div>
                   </div>
-                  <label>
-                    <span>Business Type <span class="field-required" aria-hidden="true">*</span></span>
-                    <select id="company-business-type" name="companyBusinessType" required>
-                      <option value="Sole Proprietorship">Sole Proprietorship</option>
-                      <option value="Partnership Firm">Partnership Firm</option>
-                      <option value="Limited Liability Partnership">Limited Liability Partnership</option>
-                      <option value="Private Limited Company">Private Limited Company</option>
-                      <option value="Public Limited Company">Public Limited Company</option>
-                      <option value="One Person Company">One Person Company</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Business Category <span class="field-required" aria-hidden="true">*</span></span>
-                    <select id="company-business-category" name="companyBusinessCategory" required>
-                      <option value="Trading">Trading</option>
-                      <option value="Services">Services</option>
-                      <option value="Manufacturing">Manufacturing</option>
-                      <option value="Retail">Retail</option>
-                      <option value="Wholesale">Wholesale</option>
-                      <option value="Technology">Technology</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Email ID <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-email" name="companyEmail" type="email" placeholder="accounts@unidex.in" required>
-                  </label>
-                  <label>
-                    <span>Financial Year Start Date <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-financial-year-start" name="companyFinancialYearStart" type="date" value="2026-04-01" required>
-                  </label>
-                  <label class="field-span">
-                    <span>Default Invoice Prefix <span class="field-required" aria-hidden="true">*</span></span>
-                    <input id="company-invoice-prefix" name="companyInvoicePrefix" type="text" placeholder="INV-2026-" required>
-                  </label>
-                  <p id="company-form-message" class="form-message field-span" aria-live="polite"></p>
-                  <div class="button-row">
-                    <button class="button button--primary" type="submit">Save company</button>
+
+                  <!-- ============================================== -->
+                  <!-- STEP 3: BILLING & BANKING                      -->
+                  <!-- ============================================== -->
+                  <div class="wizard-step-content" data-step="3">
+                    <div class="form-section field-span">
+                      <div class="form-section__head">
+                        <h3>Bank Details (Optional)</h3>
+                      </div>
+                    </div>
+
+                    <label class="field-span">
+                      <span>Bank Account Name</span>
+                      <input id="company-bank-holder" name="companyBankHolder" type="text" placeholder="Name on account">
+                    </label>
+                    <label>
+                      <span>Account Number</span>
+                      <input id="company-bank-account" name="companyBankAccount" type="text" placeholder="Account Number">
+                    </label>
+                    <label>
+                      <span>IFSC Code</span>
+                      <input id="company-bank-ifsc" name="companyBankIfsc" type="text" placeholder="e.g. SBIN0001234">
+                    </label>
+                    <label class="field-span">
+                      <span>Bank Name</span>
+                      <input id="company-bank-name" name="companyBankName" type="text" placeholder="e.g. State Bank of India">
+                    </label>
+
+                    <div class="form-section field-span" style="margin-top: 16px;">
+                      <div class="form-section__head">
+                        <h3>Billing Defaults</h3>
+                      </div>
+                    </div>
+
+                    <label class="field-span">
+                      <span>UPI ID (Optional - Shown on Invoice)</span>
+                      <input id="admin-company-upi" name="companyUpi" type="text" placeholder="merchant@upi">
+                    </label>
+
+                    <label>
+                      <span>Invoice Prefix <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-invoice-prefix" name="companyInvoicePrefix" type="text" placeholder="INV-2026-" required>
+                    </label>
+                    <label>
+                      <span>Financial Year Start Date <span class="field-required" aria-hidden="true">*</span></span>
+                      <input id="company-financial-year-start" name="companyFinancialYearStart" type="date" value="2026-04-01" required>
+                    </label>
+
+                    <div class="field-span" style="margin-top: 16px; max-width: 240px;">
+                      <label class="upload-card upload-card--signature" for="company-signature" style="width: 100%;">
+                        <span class="upload-card__title">Add Signature (Optional)</span>
+                        <span id="company-signature-preview" class="upload-card__preview upload-card__preview--signature">
+                          <span class="upload-card__empty">Add Signature</span>
+                        </span>
+                        <span class="upload-card__hint">Upload signing authority</span>
+                      </label>
+                      <input id="company-signature" name="companySignature" type="file" accept="image/*" class="visually-hidden">
+                    </div>
+
+                    <div class="button-row field-span" style="justify-content: space-between; margin-top: 24px;">
+                      <button class="button button--secondary btn-wizard-back" type="button" data-back="2">Back</button>
+                      <div style="display: flex; gap: 12px;">
+                        <button class="button button--secondary btn-wizard-skip" type="button" data-skip="true">Skip</button>
+                        <button class="button button--primary" type="submit">Save & Finish</button>
+                      </div>
+                    </div>
                   </div>
+
                 </form>
               </article>
 
+              <aside class="wizard-preview-panel">
+                <div class="invoice-header-preview">
+                  <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+                    <div>
+                      <img id="preview-live-logo" src="" alt="Logo" class="preview-logo" style="display: none;">
+                      <div id="preview-live-brand" class="preview-brand">Your Business Name</div>
+                      <div id="preview-live-address" class="preview-address">
+                        Address will appear here.<br>City, State - Pincode
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <h2 style="margin: 0; color: #333; font-size: 1.8rem; letter-spacing: 2px;">INVOICE</h2>
+                    </div>
+                  </div>
+                  <div class="preview-meta">
+                    <div>
+                      <strong>GSTIN:</strong> <span id="preview-live-gstin">-</span><br>
+                      <strong>Phone:</strong> <span id="preview-live-phone">-</span>
+                    </div>
+                    <div style="text-align: right;">
+                      <strong>Email:</strong> <span id="preview-live-email">-</span><br>
+                      <strong>PAN:</strong> <span id="preview-live-pan">-</span>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+            </div> <!-- /wizard-layout -->
+            </div> <!-- /admin-tab-profile -->
+
+            <div id="admin-tab-config" class="admin-tab-content" style="display: none;">
               <article id="admin-controls" class="panel module-card">
                 <div class="panel-head">
                   <div>
@@ -969,7 +1114,7 @@
                   </div>
                 </div>
               </article>
-            </div>
+            </div> <!-- /admin-tab-config -->
           </section>
         </section>
       </section>

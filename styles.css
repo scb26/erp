@@ -3531,3 +3531,187 @@ body.hide-site-header .site-header {
 .text-muted { color: var(--muted); }
 .text-small { font-size: 0.85rem; }
 .flex-1 { flex: 1; }
+
+/* =========================================
+   Wizard & Setup Layouts
+   ========================================= */
+
+.wizard-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .wizard-layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  }
+}
+
+.wizard-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  position: relative;
+  padding: 0 12px;
+}
+
+/* Pin the line to the vertical centre of the 32px dots, not to 50% of the
+   full stepper height (which includes the label text beneath the dots). */
+.wizard-stepper::before {
+  content: "";
+  position: absolute;
+  top: 16px;          /* half of dot height (32px / 2) */
+  left: 24px;
+  right: 24px;
+  height: 2px;
+  background: var(--border);
+  z-index: 1;
+  transform: none;
+}
+
+.wizard-step-indicator {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.wizard-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--panel-strong);
+  border: 2px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.wizard-step-indicator.is-active .wizard-step-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--ring);
+}
+
+.wizard-step-indicator.is-completed .wizard-step-dot {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.wizard-step-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wizard-step-indicator.is-active .wizard-step-label {
+  color: var(--text);
+}
+
+.wizard-step-content {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.wizard-step-content.is-active {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .wizard-step-content.is-active {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.input-group input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.input-group button {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.wizard-preview-panel {
+  display: none;
+  position: sticky;
+  top: 100px;
+}
+
+@media (min-width: 992px) {
+  .wizard-preview-panel {
+    display: block;
+  }
+}
+
+.invoice-header-preview {
+  padding: 24px;
+  background: #fff; /* Always white to look like paper */
+  color: #000;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 1px solid #ddd;
+  font-family: Arial, sans-serif;
+}
+
+:root[data-theme="dark"] .invoice-header-preview {
+  opacity: 0.9;
+}
+
+.preview-logo {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.preview-brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.preview-address {
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.preview-meta {
+  font-size: 0.8rem;
+  color: #666;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed #ccc;
+}

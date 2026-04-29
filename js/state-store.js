@@ -142,12 +142,16 @@ window.Unidex = window.Unidex || {};
   function normalizeProduct(p) {
     return {
       id: String(p.id),
-      name: p.name,
+      name: p.name || p.product_name || "",
       barcode: p.barcode || "",
-      hsn: p.hsn || "",
-      price: parseFloat(p.price || 0),
+      hsn: p.hsn || p.hsn_sac_code || "",
+      price: parseFloat(p.price || p.selling_price || p.default_rate || 0),
       gstRate: parseFloat(p.gstRate || p.gst_rate || 0),
-      stock: parseFloat(p.stock || 0)
+      stock: parseFloat(p.stock || p.stock_qty || 0),
+      purchasePrice: parseFloat(p.purchase_price || 0),
+      mrp: parseFloat(p.mrp || 0),
+      lowStockThreshold: parseFloat(p.low_stock_threshold || 5),
+      lastPurchaseDate: p.last_purchase_date || null
     };
   }
 
@@ -256,6 +260,13 @@ window.Unidex = window.Unidex || {};
       app.data.products.unshift(newItem);
       persist(app.data);
       return newItem;
+    }).catch(function () {
+      var localItem = normalizeProduct(Object.assign({}, item, {
+        id: item.id || ("PROD-" + Date.now())
+      }));
+      app.data.products.unshift(localItem);
+      persist(app.data);
+      return localItem;
     });
   }
 
@@ -272,11 +283,25 @@ window.Unidex = window.Unidex || {};
       if (idx !== -1) app.data.products[idx] = updated;
       persist(app.data);
       return updated;
+    }).catch(function () {
+      var updatedLocal = normalizeProduct(Object.assign({}, data, { id: id }));
+      var idx = -1;
+      for (var i = 0; i < app.data.products.length; i++) {
+        if (app.data.products[i].id === String(id)) { idx = i; break; }
+      }
+      if (idx !== -1) {
+        app.data.products[idx] = updatedLocal;
+      }
+      persist(app.data);
+      return updatedLocal;
     });
   }
 
   function deleteInventoryItem(app, id) {
     return request("/inventory/" + id, { method: "DELETE" }).then(function() {
+      app.data.products = app.data.products.filter(function(p) { return p.id !== String(id); });
+      persist(app.data);
+    }).catch(function () {
       app.data.products = app.data.products.filter(function(p) { return p.id !== String(id); });
       persist(app.data);
     });
@@ -454,4 +479,3 @@ window.Unidex = window.Unidex || {};
     saveInvoice: saveInvoice
   };
 })(window.Unidex);
-

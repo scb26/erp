@@ -72,11 +72,14 @@ window.Unidex = window.Unidex || {};
       var isActiveView = false;
       if (app.activeModule === "sales" && item.view === app.activeBillingView) isActiveView = true;
       if (app.activeModule === "inventory" && item.view === app.activeProductView) isActiveView = true;
-      
+      // Admin tab: first item is always active on load
+      if (app.activeModule === "admin" && item.tab === "profile") isActiveView = true;
+
       var activeClass = isActiveView ? " is-active" : "";
       var viewAttribute = item.view ? ' data-sub-view="' + item.view + '"' : "";
+      var tabAttribute = item.tab ? ' data-admin-tab="' + item.tab + '"' : "";
 
-      return '<button class="module-menu__button' + activeClass + '" type="button" data-target-id="' + item.target + '"' + viewAttribute + ">" + item.label + "</button>";
+      return '<button class="module-menu__button' + activeClass + '" type="button" data-target-id="' + item.target + '"' + viewAttribute + tabAttribute + ">" + item.label + "</button>";
     }).join("");
   }
 

@@ -80,8 +80,8 @@ window.Unidex = window.Unidex || {};
         description: "Configure company identity, tax profile, and the main settings that appear on every invoice.",
         menuTitle: "Admin Menu",
         menu: [
-          { label: "Company Profile", target: "admin-company" },
-          { label: "Current Setup", target: "admin-controls" }
+          { label: "Company Profile", target: "admin-tab-profile", tab: "profile" },
+          { label: "Current Setup", target: "admin-tab-config", tab: "config" }
         ]
       }
     }

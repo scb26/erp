@@ -41,6 +41,11 @@ window.Unidex = window.Unidex || {};
     app.setActiveModule = function (moduleKey) {
       navigation.setActiveModule(app, moduleKey);
       app.renderAll();
+      // Re-bind admin tab buttons each time the admin module becomes active,
+      // because navigation.renderModuleMenu() re-creates the DOM nodes.
+      if (moduleKey === "admin" && app._bindAdminTabs) {
+        app._bindAdminTabs();
+      }
     };
 
     app.setActiveBillingView = function (viewKey) {
@@ -112,11 +117,16 @@ window.Unidex = window.Unidex || {};
         return;
       }
 
+      // Admin tab buttons are handled by bindAdminTabs — skip scrollIntoView.
+      if (event.target.dataset.adminTab) {
+        return;
+      }
+
       if (!event.target.dataset.targetId) {
         return;
       }
 
-      target = document.getElementById(event.target.dataset.targetId);
+      var target = document.getElementById(event.target.dataset.targetId);
 
       if (target) {
         target.scrollIntoView({ behavior: "smooth", block: "start" });
